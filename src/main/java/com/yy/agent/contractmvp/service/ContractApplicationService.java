@@ -1,6 +1,7 @@
 package com.yy.agent.contractmvp.service;
 
 import com.yy.agent.contractmvp.ai.AiContractAssistant;
+import com.yy.agent.contractmvp.ai.rag.ContractVectorIngestionService;
 import com.yy.agent.contractmvp.api.dto.ApprovalAssistRequest;
 import com.yy.agent.contractmvp.api.dto.ApprovalAssistResponse;
 import com.yy.agent.contractmvp.api.dto.ContractQaRequest;
@@ -33,14 +34,21 @@ public class ContractApplicationService {
 
     private final ContractRepository contractRepository;
     private final AiContractAssistant aiContractAssistant;
+    private final ContractVectorIngestionService contractVectorIngestionService;
 
     /**
      * @param contractRepository   合同与条款、审批数据访问（当前多为内存 Mock）
      * @param aiContractAssistant 封装 RAG、Prompt与大模型调用的助手
+     * @param contractVectorIngestionService 条款向量化入库服务
      */
-    public ContractApplicationService(ContractRepository contractRepository, AiContractAssistant aiContractAssistant) {
+    public ContractApplicationService(
+            ContractRepository contractRepository,
+            AiContractAssistant aiContractAssistant,
+            ContractVectorIngestionService contractVectorIngestionService
+    ) {
         this.contractRepository = contractRepository;
         this.aiContractAssistant = aiContractAssistant;
+        this.contractVectorIngestionService = contractVectorIngestionService;
     }
 
     /**
@@ -114,8 +122,10 @@ public class ContractApplicationService {
                 request.notes()
         );
         contractRepository.save(contract);
-        contractRepository.replaceChunks(id, mapChunks(id, request.chunks()));
+        List<ClauseChunk> chunks = mapChunks(id, request.chunks());
+        contractRepository.replaceChunks(id, chunks);
         contractRepository.replaceApprovalRecords(id, List.of());
+        contractVectorIngestionService.ingest(chunks);
         return new ImportContractResponse(id);
     }
 

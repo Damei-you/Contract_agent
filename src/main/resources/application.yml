@@ -2,17 +2,13 @@ spring:
   application:
     name: contract-agent-mvp
 
-    # PostgreSQL (pgvector); use compose.yaml in this module or: docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres pgvector/pgvector:pg16
+  # PostgreSQL (pgvector); use compose.yaml in this module or:
+  # docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres pgvector/pgvector:pg16
   datasource:
-   url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:contract_agent}
-   username: ${PGUSER:postgres}
-   password: ${PGPASSWORD:123456}
-   driver-class-name: org.postgresql.Driver
-  Minimal QA mode: keep startup independent from PostgreSQL/pgvector.
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:contract_agent}
+    username: ${PGUSER:postgres}
+    password: ${PGPASSWORD:123456}
+    driver-class-name: org.postgresql.Driver
 
   ai:
     # Shared OpenAI-compatible endpoint (DashScope, OpenAI, etc.).
@@ -28,17 +24,17 @@ spring:
 
       # Embedding model for RAG / pgvector; spring.ai.vectorstore.pgvector.dimensions MUST match this model's output size
       embedding:
-         options:
-           model: ${OPENAI_EMBEDDING_MODEL:text-embedding-v3}
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-v3}
 
     vectorstore:
-     pgvector:
-       initialize-schema: true
-       index-type: HNSW
-       distance-type: COSINE_DISTANCE
-       # Must equal embedding vector length; change model or this value => drop/recreate vector_store or set remove-existing-vector-store-table
-       dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1024}
-       max-document-batch-size: 10000
+      pgvector:
+        initialize-schema: true
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        # Must equal embedding vector length; change model or this value => drop/recreate vector_store or set remove-existing-vector-store-table
+        dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1024}
+        max-document-batch-size: 10000
 
 server:
   port: 8088

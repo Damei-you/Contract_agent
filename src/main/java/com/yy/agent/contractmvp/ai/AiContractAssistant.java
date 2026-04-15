@@ -26,7 +26,7 @@ import java.util.Locale;
 public class AiContractAssistant {
 
     /** 每次检索返回的条款块数量上限。 */
-    private static final int RAG_TOP_K = 6;
+    private static final int RAG_TOP_K = 4;
     /** 拼入 Prompt 的 RAG 正文最大字符数，防止超长上下文。 */
     private static final int RAG_CONTEXT_MAX_CHARS = 12_000;
 
