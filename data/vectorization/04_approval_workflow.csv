@@ -1,0 +1,11 @@
+workflow_id,contract_id,step_no,step_name,approver_role,approval_type,amount_threshold_min,amount_threshold_max,parallel_group,sla_hours,vector_doc_id
+WF-001,CTR-2026-DEMO-001,1,业务初审,业务经办人,提交,0,999999999,,24,doc_wf_001
+WF-001,CTR-2026-DEMO-001,2,部门负责人,部门负责人,审批,0,500000,,48,doc_wf_001
+WF-001,CTR-2026-DEMO-001,3,财务审核,财务经理,审批,0,999999999,,72,doc_wf_001
+WF-001,CTR-2026-DEMO-001,4,法务审核,法务,审批,0,999999999,,120,doc_wf_001
+WF-001,CTR-2026-DEMO-001,5,分管领导,分管领导,审批,300000,999999999,,72,doc_wf_001
+WF-002,CTR-2026-DEMO-002,1,业务初审,业务经办人,提交,0,999999999,,24,doc_wf_002
+WF-002,CTR-2026-DEMO-002,2,信息安全评估,信息安全负责人,会签,0,999999999,G1,72,doc_wf_002
+WF-002,CTR-2026-DEMO-002,3,法务审核,法务,会签,0,999999999,G1,120,doc_wf_002
+WF-002,CTR-2026-DEMO-002,4,财务审核,财务负责人,审批,0,999999999,,72,doc_wf_002
+WF-002,CTR-2026-DEMO-002,5,总经理,总经理,审批,1000000,999999999,,48,doc_wf_002

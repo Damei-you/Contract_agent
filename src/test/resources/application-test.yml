@@ -1,0 +1,9 @@
+# Smoke tests: no real API key, no PostgreSQL (pgvector wiring is covered by integration tests later).
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+  ai:
+    openai:
+      api-key: test-dummy-key

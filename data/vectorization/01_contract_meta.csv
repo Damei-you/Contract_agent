@@ -1,0 +1,3 @@
+contract_id,contract_type,party_a_name,party_b_name,currency,amount_ex_tax,tax_rate_pct,amount_inc_tax,sign_date,effective_date,end_date,performance_site,payment_terms_summary,business_owner_dept,risk_tier,vector_doc_id,notes
+CTR-2026-DEMO-001,采购合同,某某科技有限公司,某某设备供应商有限公司,CNY,500000.00,13,565000.00,2026-01-10,2026-01-15,2026-12-31,甲方指定交付地点,验收合格后30日内电汇支付至乙方账户,信息技术部,中,doc_ctr_001,框架下单分批交付
+CTR-2026-DEMO-002,服务合同,某某科技有限公司,某某信息技术服务有限公司,CNY,1200000.00,6,1272000.00,2026-02-01,2026-02-05,2027-02-04,远程+驻场结合,按季度里程碑付款（4:3:3）,财务部,高,doc_ctr_002,含数据安全与外包人员管理条款

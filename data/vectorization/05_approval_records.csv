@@ -1,0 +1,5 @@
+record_id,contract_id,step_no,approver_role,decision,decision_time,comment_summary,linked_policy_ids,linked_clause_chunk_ids,structured_findings_json,vector_doc_id
+AR-001,CTR-2026-DEMO-001,3,财务经理,通过,2026-01-12T10:00:00+08:00,付款节点与发票类型约定清晰，建议补充税率调整机制。,POL-TAX-001,c004; c003,"{""issues"":[{""code"":""TAX_CLARITY"",""level"":""low"",""detail"":""已约定税率调整，保持即可""}]}",doc_ar_001
+AR-002,CTR-2026-DEMO-001,4,法务,附条件通过,2026-01-12T15:30:00+08:00,责任上限与合同总价挂钩可接受；建议删除乙方单方解除权。,POL-LEGAL-001,c007; c009,"{""issues"":[{""code"":""TERMINATION_ASYMMETRY"",""level"":""medium"",""detail"":""需对等化解除条件""}]}",doc_ar_002
+AR-003,CTR-2026-DEMO-002,2,信息安全负责人,退回补充,2026-02-03T09:00:00+08:00,缺少数据分级、出境与日志留存要求；驻场账号权限需最小化。,POL-SVC-001,c012; c013,"{""issues"":[{""code"":""DATA_GOVERNANCE_GAP"",""level"":""high"",""detail"":""需补充DPA/数据处理附录""}]}",doc_ar_003
+AR-004,CTR-2026-DEMO-002,4,财务负责人,通过,2026-02-05T11:20:00+08:00,里程碑付款比例与验收挂钩，关注里程碑定义是否可审计。,POL-FIN-001,c004,"{""issues"":[{""code"":""MILESTONE_AUDIT"",""level"":""low"",""detail"":""建议附件明确里程碑验收材料""}]}",doc_ar_004
