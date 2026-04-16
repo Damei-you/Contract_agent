@@ -35,3 +35,21 @@ CREATE TABLE IF NOT EXISTS clause_chunks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_clause_chunks_contract_id ON clause_chunks (contract_id);
+
+CREATE TABLE IF NOT EXISTS approval_records (
+    contract_id VARCHAR(64) NOT NULL REFERENCES contracts (id) ON DELETE CASCADE,
+    approval_record_id VARCHAR(64) NOT NULL,
+    step_no INTEGER NOT NULL,
+    approver_role VARCHAR(255) NOT NULL,
+    decision VARCHAR(32) NOT NULL,
+    decision_time TIMESTAMP WITH TIME ZONE,
+    comment_summary TEXT NOT NULL DEFAULT '',
+    linked_policy_ids_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    linked_clause_chunk_ids_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    risk_items_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    vector_doc_id VARCHAR(128),
+    PRIMARY KEY (contract_id, approval_record_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_records_contract_id ON approval_records (contract_id);
+CREATE INDEX IF NOT EXISTS idx_approval_records_contract_step ON approval_records (contract_id, step_no);

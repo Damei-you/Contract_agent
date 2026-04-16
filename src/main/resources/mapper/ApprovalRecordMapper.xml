@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yy.agent.contractmvp.mapper.ApprovalRecordMapper">
+
+    <resultMap id="ApprovalRecordRowResultMap" type="com.yy.agent.contractmvp.mapper.model.ApprovalRecordRow">
+        <constructor>
+            <arg column="contract_id" javaType="java.lang.String"/>
+            <idArg column="approval_record_id" javaType="java.lang.String"/>
+            <arg column="step_no" javaType="int"/>
+            <arg column="approver_role" javaType="java.lang.String"/>
+            <arg column="decision" javaType="com.yy.agent.contractmvp.domain.ApprovalDecision"/>
+            <arg column="decision_time" javaType="java.time.OffsetDateTime" jdbcType="TIMESTAMP_WITH_TIMEZONE"/>
+            <arg column="comment_summary" javaType="java.lang.String"/>
+            <arg column="linked_policy_ids_json" javaType="java.lang.String"/>
+            <arg column="linked_clause_chunk_ids_json" javaType="java.lang.String"/>
+            <arg column="risk_items_json" javaType="java.lang.String"/>
+            <arg column="vector_doc_id" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <select id="selectByContractId" resultMap="ApprovalRecordRowResultMap">
+        SELECT contract_id, approval_record_id, step_no, approver_role, decision, decision_time,
+               comment_summary, linked_policy_ids_json, linked_clause_chunk_ids_json, risk_items_json, vector_doc_id
+        FROM approval_records
+        WHERE contract_id = #{contractId}
+        ORDER BY step_no, approval_record_id
+    </select>
+
+    <delete id="deleteByContractId">
+        DELETE FROM approval_records WHERE contract_id = #{contractId}
+    </delete>
+
+    <insert id="insertBatch">
+        INSERT INTO approval_records (
+            contract_id, approval_record_id, step_no, approver_role, decision, decision_time,
+            comment_summary, linked_policy_ids_json, linked_clause_chunk_ids_json, risk_items_json, vector_doc_id
+        ) VALUES
+        <foreach collection="rows" item="r" separator=",">
+            (
+                #{r.contractId}, #{r.approvalRecordId}, #{r.stepNo}, #{r.approverRole}, #{r.decision}, #{r.decisionTime},
+                CAST(#{r.commentSummary} AS TEXT),
+                CAST(#{r.linkedPolicyIdsJson} AS JSONB),
+                CAST(#{r.linkedClauseChunkIdsJson} AS JSONB),
+                CAST(#{r.riskItemsJson} AS JSONB),
+                #{r.vectorDocId}
+            )
+        </foreach>
+    </insert>
+</mapper>

@@ -5,6 +5,8 @@ import com.yy.agent.contractmvp.api.dto.ApprovalAssistResponse;
 import com.yy.agent.contractmvp.api.dto.ContractQaRequest;
 import com.yy.agent.contractmvp.api.dto.ContractQaResponse;
 import com.yy.agent.contractmvp.api.dto.ContractRiskCheckResponse;
+import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordsRequest;
+import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordsResponse;
 import com.yy.agent.contractmvp.api.dto.ImportContractRequest;
 import com.yy.agent.contractmvp.api.dto.ImportContractResponse;
 import com.yy.agent.contractmvp.service.ContractApplicationService;
@@ -80,5 +82,20 @@ public class ContractController {
     @PostMapping("/import")
     public ImportContractResponse importContract(@Valid @RequestBody ImportContractRequest request) {
         return contractApplicationService.importContract(request);
+    }
+
+    /**
+     * 全量替换某合同的审批记录，供审批历史补录或批量导入使用。
+     *
+     * @param id      合同 id
+     * @param request 审批记录列表
+     * @return 导入结果
+     */
+    @PostMapping("/{id}/approval-records/import")
+    public ImportApprovalRecordsResponse importApprovalRecords(
+            @PathVariable("id") String id,
+            @Valid @RequestBody ImportApprovalRecordsRequest request
+    ) {
+        return contractApplicationService.importApprovalRecords(id, request);
     }
 }

@@ -7,12 +7,19 @@ import com.yy.agent.contractmvp.api.dto.ApprovalAssistResponse;
 import com.yy.agent.contractmvp.api.dto.ContractQaRequest;
 import com.yy.agent.contractmvp.api.dto.ContractQaResponse;
 import com.yy.agent.contractmvp.api.dto.ContractRiskCheckResponse;
+import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordDto;
+import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordsRequest;
+import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordsResponse;
+import com.yy.agent.contractmvp.api.dto.ImportApprovalRiskItemDto;
 import com.yy.agent.contractmvp.api.dto.ImportChunkDto;
 import com.yy.agent.contractmvp.api.dto.ImportContractRequest;
 import com.yy.agent.contractmvp.api.dto.ImportContractResponse;
+import com.yy.agent.contractmvp.domain.ApprovalDecision;
+import com.yy.agent.contractmvp.domain.ApprovalRecord;
 import com.yy.agent.contractmvp.domain.ClauseChunk;
 import com.yy.agent.contractmvp.domain.Contract;
 import com.yy.agent.contractmvp.domain.ContractType;
+import com.yy.agent.contractmvp.domain.RiskItem;
 import com.yy.agent.contractmvp.domain.RiskSeverity;
 import com.yy.agent.contractmvp.repository.ContractRepository;
 import org.springframework.beans.factory.ObjectProvider;
@@ -129,6 +136,23 @@ public class ContractApplicationService {
     }
 
     /**
+     * 全量替换某合同审批记录，导入后风险检查/审批辅助即可读取最新审批历史。
+     *
+     * @param contractId 合同 id
+     * @param request    审批记录列表
+     * @return 导入数量
+     */
+    public ImportApprovalRecordsResponse importApprovalRecords(
+            String contractId,
+            ImportApprovalRecordsRequest request
+    ) {
+        ensureContractExists(contractId);
+        List<ApprovalRecord> records = mapApprovalRecords(contractId, request.records());
+        contractRepository.replaceApprovalRecords(contractId, records);
+        return new ImportApprovalRecordsResponse(contractId, records.size());
+    }
+
+    /**
      * 若合同不存在则抛出 404，供问答/风险/审批接口复用。
      */
     private void ensureContractExists(String contractId) {
@@ -172,6 +196,70 @@ public class ContractApplicationService {
             ));
         }
         return out;
+    }
+
+    /**
+     * 将审批导入 DTO 映射为领域记录；未传记录 id 时按步骤序号补足稳定默认值。
+     */
+    private static List<ApprovalRecord> mapApprovalRecords(String contractId, List<ImportApprovalRecordDto> records) {
+        List<ApprovalRecord> out = new ArrayList<>();
+        int seq = 0;
+        for (ImportApprovalRecordDto d : records) {
+            seq++;
+            String id = (d.id() == null || d.id().isBlank()) ? contractId + "-ar-" + seq : d.id().trim();
+            out.add(new ApprovalRecord(
+                    id,
+                    contractId,
+                    d.stepNo(),
+                    d.approverRole().trim(),
+                    parseApprovalDecision(d.decision()),
+                    d.decisionTime(),
+                    nullToEmpty(d.commentSummary()),
+                    trimList(d.linkedPolicyIds()),
+                    trimList(d.linkedClauseChunkIds()),
+                    mapRiskItems(d.riskItems()),
+                    d.vectorDocId() == null || d.vectorDocId().isBlank() ? null : d.vectorDocId().trim()
+            ));
+        }
+        return out;
+    }
+
+    private static List<RiskItem> mapRiskItems(List<ImportApprovalRiskItemDto> riskItems) {
+        if (riskItems == null || riskItems.isEmpty()) {
+            return List.of();
+        }
+        List<RiskItem> out = new ArrayList<>();
+        for (ImportApprovalRiskItemDto d : riskItems) {
+            out.add(new RiskItem(
+                    d.code().trim(),
+                    parseRiskTier(d.severity()),
+                    nullToEmpty(d.detail()),
+                    trimList(d.relatedClauseChunkIds()),
+                    trimList(d.relatedPolicyIds())
+            ));
+        }
+        return out;
+    }
+
+    /**
+     * 审批结论支持英文枚举名和中文显示名。
+     */
+    private static ApprovalDecision parseApprovalDecision(String value) {
+        try {
+            return ApprovalDecision.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (Exception e) {
+            return ApprovalDecision.fromDisplayName(value.trim());
+        }
+    }
+
+    private static List<String> trimList(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        return values.stream()
+                .filter(v -> v != null && !v.isBlank())
+                .map(String::trim)
+                .toList();
     }
 
     /** null 转为空串，避免领域对象中出现 null 描述字段。 */

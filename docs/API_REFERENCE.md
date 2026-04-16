@@ -1,6 +1,6 @@
 # Contract Agent API 文档
 
-本文档描述合同导入、问答、风险检查、审批辅助 4 个核心接口的请求/响应示例，并给出错误码语义、幂等与重试建议。
+本文档描述合同导入、审批记录导入、问答、风险检查、审批辅助 5 个核心接口的请求/响应示例，并给出错误码语义、幂等与重试建议。
 
 ## 1. 通用约定
 
@@ -63,7 +63,51 @@
 }
 ```
 
-## 3. 合同问答
+## 3. 全量导入审批记录
+
+- Method：`POST`
+- URL：`/api/contracts/{id}/approval-records/import`
+- 用途：对指定合同全量替换审批历史，供补录、迁移或批量初始化使用。
+
+### 请求示例
+
+```json
+{
+  "records": [
+    {
+      "id": "AR-001",
+      "stepNo": 2,
+      "approverRole": "财务经理",
+      "decision": "APPROVED",
+      "decisionTime": "2026-04-16T10:00:00+08:00",
+      "commentSummary": "付款条件清晰，可通过。",
+      "linkedPolicyIds": ["POL-TAX-001"],
+      "linkedClauseChunkIds": ["c001", "c002"],
+      "riskItems": [
+        {
+          "code": "PAYMENT_REVIEW",
+          "severity": "LOW",
+          "detail": "付款闭环已确认。",
+          "relatedClauseChunkIds": ["c001"],
+          "relatedPolicyIds": []
+        }
+      ],
+      "vectorDocId": "doc_ar_001"
+    }
+  ]
+}
+```
+
+### 成功响应示例（200）
+
+```json
+{
+  "contractId": "CTR-RAG-001",
+  "importedCount": 1
+}
+```
+
+## 4. 合同问答
 
 - Method：`POST`
 - URL：`/api/contracts/{id}/qa`

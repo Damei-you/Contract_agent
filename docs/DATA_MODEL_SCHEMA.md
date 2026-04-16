@@ -7,15 +7,15 @@
 - 业务权威数据（可重启恢复）：
   - `contracts`：合同主数据
   - `clause_chunks`：合同条款分块
+  - `approval_records`：合同审批记录
 - 检索索引数据（派生数据）：
   - `vector_store`：pgvector 文档与向量（由 Spring AI 管理）
-- 当前状态：
-  - `ApprovalRecord` 领域对象已存在，但审批表尚未落库（仓储暂返回空列表）。
 
 ## 2. 领域对象到表的映射总览
 
 - `Contract` -> `contracts`
 - `ClauseChunk` -> `clause_chunks`
+- `ApprovalRecord` -> `approval_records`
 - 向量文档（由 `ClauseChunk` 派生）-> `vector_store`
 
 说明：`vector_store` 不作为业务事实来源，合同是否存在、条款原文权威归属仍在业务表。
@@ -77,6 +77,31 @@
 - 外键：`fk_clause_chunks_contract_id -> contracts(id) ON DELETE CASCADE`
 - 索引：`idx_clause_chunks_contract_id(contract_id)`
 
+### 3.3 `approval_records`
+
+用途：保存某合同下的审批历史，支持全量导入、审批摘要生成与后续模型辅助。
+
+| 列名 | 类型 | 非空 | 默认值 | 说明 |
+|---|---|---:|---|---|
+| `contract_id` | `varchar(64)` | Y | - | 所属合同 ID，外键到 `contracts.id` |
+| `approval_record_id` | `varchar(64)` | Y | - | 审批记录 ID |
+| `step_no` | `integer` | Y | - | 流程步骤序号 |
+| `approver_role` | `varchar(255)` | Y | - | 审批角色 |
+| `decision` | `varchar(32)` | Y | - | 审批结论，映射 `ApprovalDecision` |
+| `decision_time` | `timestamp with time zone` | N | - | 决策时间 |
+| `comment_summary` | `text` | Y | `''` | 审批意见摘要 |
+| `linked_policy_ids_json` | `jsonb` | Y | `'[]'::jsonb` | 关联政策 ID 列表 |
+| `linked_clause_chunk_ids_json` | `jsonb` | Y | `'[]'::jsonb` | 关联条款块 ID 列表 |
+| `risk_items_json` | `jsonb` | Y | `'[]'::jsonb` | 结构化风险项数组 |
+| `vector_doc_id` | `varchar(128)` | N | - | 审批记录对应向量文档 ID |
+
+约束与索引：
+
+- 主键：`pk_approval_records(contract_id, approval_record_id)`
+- 外键：`fk_approval_records_contract_id -> contracts(id) ON DELETE CASCADE`
+- 索引：`idx_approval_records_contract_id(contract_id)`
+- 索引：`idx_approval_records_contract_step(contract_id, step_no)`
+
 ## 4. 向量表结构（检索索引）
 
 ### 4.1 `vector_store`
@@ -128,6 +153,6 @@
 
 ## 7. 演进建议（后续）
 
-- 增加审批持久化表（如 `approval_records` 及关联子表）以消除当前“审批记录不落库”缺口。
+- 如审批检索、报表查询继续增多，可将 JSONB 字段进一步拆分为子表。
 - 通过 Flyway/Liquibase 管控 `schema.sql` 版本，避免环境漂移。
 - 为高频检索字段补充索引并定期评估查询计划。
