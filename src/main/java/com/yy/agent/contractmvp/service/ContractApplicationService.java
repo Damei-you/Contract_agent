@@ -15,6 +15,7 @@ import com.yy.agent.contractmvp.domain.Contract;
 import com.yy.agent.contractmvp.domain.ContractType;
 import com.yy.agent.contractmvp.domain.RiskSeverity;
 import com.yy.agent.contractmvp.repository.ContractRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,17 +35,17 @@ public class ContractApplicationService {
 
     private final ContractRepository contractRepository;
     private final AiContractAssistant aiContractAssistant;
-    private final ContractVectorIngestionService contractVectorIngestionService;
+    private final ObjectProvider<ContractVectorIngestionService> contractVectorIngestionService;
 
     /**
-     * @param contractRepository   合同与条款、审批数据访问（当前多为内存 Mock）
+     * @param contractRepository   合同与条款、审批数据访问（默认 MyBatis + PostgreSQL；test 为内存 Mock）
      * @param aiContractAssistant 封装 RAG、Prompt与大模型调用的助手
-     * @param contractVectorIngestionService 条款向量化入库服务
+     * @param contractVectorIngestionService test profile 下可能无向量 Bean，故用 ObjectProvider
      */
     public ContractApplicationService(
             ContractRepository contractRepository,
             AiContractAssistant aiContractAssistant,
-            ContractVectorIngestionService contractVectorIngestionService
+            ObjectProvider<ContractVectorIngestionService> contractVectorIngestionService
     ) {
         this.contractRepository = contractRepository;
         this.aiContractAssistant = aiContractAssistant;
@@ -121,11 +122,9 @@ public class ContractApplicationService {
                 request.vectorDocId() == null || request.vectorDocId().isBlank() ? null : request.vectorDocId(),
                 request.notes()
         );
-        contractRepository.save(contract);
         List<ClauseChunk> chunks = mapChunks(id, request.chunks());
-        contractRepository.replaceChunks(id, chunks);
-        contractRepository.replaceApprovalRecords(id, List.of());
-        contractVectorIngestionService.ingest(chunks);
+        contractRepository.saveContractWithChunks(contract, chunks);
+        contractVectorIngestionService.ifAvailable(s -> s.ingest(chunks));
         return new ImportContractResponse(id);
     }
 

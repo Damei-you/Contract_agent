@@ -10,6 +10,10 @@ spring:
     password: ${PGPASSWORD:123456}
     driver-class-name: org.postgresql.Driver
 
+  sql:
+    init:
+      mode: always
+
   ai:
     # Shared OpenAI-compatible endpoint (DashScope, OpenAI, etc.).
     openai:
@@ -35,6 +39,12 @@ spring:
         # Must equal embedding vector length; change model or this value => drop/recreate vector_store or set remove-existing-vector-store-table
         dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1024}
         max-document-batch-size: 10000
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    default-enum-type-handler: org.apache.ibatis.type.EnumTypeHandler
 
 server:
   port: 8088

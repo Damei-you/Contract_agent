@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * 合同聚合持久化抽象：主数据、条款块、审批记录分层存储。
  * <p>
- * MVP 由 {@link MockContractRepository} 内存实现；后续可换为 JPA/MyBatis 等而不改上层服务签名。
+ * 默认由 {@link MybatisContractRepository} 落 PostgreSQL；{@code test} profile 使用 {@link MockContractRepository}。
  */
 public interface ContractRepository {
 
@@ -62,4 +62,12 @@ public interface ContractRepository {
      * @param records    审批记录全量替换
      */
     void replaceApprovalRecords(String contractId, List<ApprovalRecord> records);
+
+    /**
+     * 原子写入合同主数据、全量替换条款并清空审批（导入用）。
+     *
+     * @param contract 合同主数据
+     * @param chunks   条款块全量列表
+     */
+    void saveContractWithChunks(Contract contract, List<ClauseChunk> chunks);
 }

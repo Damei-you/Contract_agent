@@ -3,6 +3,7 @@ package com.yy.agent.contractmvp.ai.rag;
 import com.yy.agent.contractmvp.domain.ClauseChunk;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -18,6 +19,7 @@ import java.util.UUID;
  * id={contractId}:{chunkId}，content=【clauseTitle】\n{textForEmbedding}，metadata 为最小固定集合。
  */
 @Service
+@Profile("!test")
 public class ContractVectorIngestionService {
 
     private final VectorStore vectorStore;

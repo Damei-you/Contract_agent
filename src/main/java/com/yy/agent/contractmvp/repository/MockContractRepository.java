@@ -7,6 +7,7 @@ import com.yy.agent.contractmvp.domain.Contract;
 import com.yy.agent.contractmvp.domain.ContractType;
 import com.yy.agent.contractmvp.domain.RiskItem;
 import com.yy.agent.contractmvp.domain.RiskSeverity;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 三张表：合同主数据、按合同 id 分组的条款块、按合同 id 分组的审批记录。
  */
 @Repository
+@Profile("test")
 public class MockContractRepository implements ContractRepository {
 
     private final Map<String, Contract> contracts = new ConcurrentHashMap<>();
@@ -217,5 +219,12 @@ public class MockContractRepository implements ContractRepository {
     @Override
     public void replaceApprovalRecords(String contractId, List<ApprovalRecord> records) {
         approvalsByContract.put(contractId, new ArrayList<>(records));
+    }
+
+    @Override
+    public void saveContractWithChunks(Contract contract, List<ClauseChunk> chunks) {
+        save(contract);
+        replaceChunks(contract.id(), chunks);
+        replaceApprovalRecords(contract.id(), List.of());
     }
 }
