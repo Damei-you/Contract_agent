@@ -45,6 +45,27 @@
       "clauseTitle": "违约责任",
       "clauseCategory": "法务",
       "textForEmbedding": "逾期履约按日万分之五承担违约金。"
+    },
+    {
+      "id": "c003",
+      "clauseCode": "DEL",
+      "clauseTitle": "交付期限",
+      "clauseCategory": "履约",
+      "textForEmbedding": "乙方应于2026年05月30日前完成全部货物交付。"
+    },
+    {
+      "id": "c004",
+      "clauseCode": "DIS",
+      "clauseTitle": "争议解决",
+      "clauseCategory": "法务",
+      "textForEmbedding": "双方因合同产生的争议应协商解决，协商不成时提交上海仲裁委员会仲裁。"
+    },
+    {
+      "id": "c005",
+      "clauseCode": "CONF",
+      "clauseTitle": "保密条款",
+      "clauseCategory": "法律",
+      "textForEmbedding": "双方对在履行合同过程中获悉的商业秘密承担保密义务。"
     }
   ]
 }
