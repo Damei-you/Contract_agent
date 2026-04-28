@@ -1,8 +1,8 @@
 :root {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
-  color: #1f2328;
-  background: #f5f7fa;
+  color: #000;
+  background: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -15,14 +15,18 @@ body,
   min-height: 100vh;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 a {
   color: inherit;
 }
 
 code {
-  background: rgba(0, 0, 0, 0.06);
-  padding: 1px 6px;
-  border-radius: 4px;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 2px;
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.9em;
 }

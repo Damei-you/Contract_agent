@@ -91,31 +91,32 @@ async function submit() {
 
 <template>
   <section class="page">
-    <h1>审批记录导入</h1>
-    <p class="hint">
-      POST <code>/api/contracts/{id}/approval-records/import</code>
-    </p>
-
-    <div class="field">
-      <label>合同 id</label>
-      <input v-model="contractId" type="text" />
+    <div class="page-header">
+      <h1>审批记录导入 <span class="endpoint">POST /api/contracts/{id}/approval-records/import</span></h1>
     </div>
 
-    <label>请求体（JSON）</label>
-    <textarea v-model="payloadText" rows="18" class="ta" spellcheck="false"></textarea>
+    <div class="card">
+      <div class="field">
+        <label class="field-label">合同 id</label>
+        <input v-model="contractId" type="text" class="inp" />
+      </div>
 
-    <div class="actions">
-      <button :disabled="loading" @click="submit">
-        {{ loading ? '导入中…' : '全量导入' }}
-      </button>
+      <label class="field-label">请求体（JSON）</label>
+      <textarea v-model="payloadText" rows="18" class="ta" spellcheck="false"></textarea>
+
+      <div class="actions">
+        <button :disabled="loading" @click="submit" class="btn">
+          {{ loading ? '导入中…' : '全量导入' }}
+        </button>
+      </div>
     </div>
 
-    <div v-if="errorMsg" class="err">
+    <div v-if="errorMsg" class="msg msg--error">
       <pre>{{ errorMsg }}</pre>
     </div>
 
-    <div v-if="result" class="ok">
-      <strong>成功响应：</strong>
+    <div v-if="result" class="msg msg--success">
+      <strong>成功响应</strong>
       <pre>{{ result }}</pre>
     </div>
   </section>
@@ -123,68 +124,121 @@ async function submit() {
 
 <style scoped>
 .page {
-  padding: 24px;
+  padding: 20px;
   max-width: 920px;
 }
-.hint {
-  color: #888;
+.page-header {
+  margin-bottom: 12px;
+}
+.page-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+}
+.endpoint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #999;
+  font-family: ui-monospace, Consolas, monospace;
+  margin-left: 12px;
+}
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  padding: 12px;
 }
 .field {
-  margin: 12px 0;
+  margin-bottom: 8px;
 }
-.field label {
+.field-label {
   display: block;
+  font-size: 12px;
   font-weight: 600;
+  color: #333;
   margin-bottom: 4px;
 }
-input {
+.inp {
   width: 100%;
-  padding: 8px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 0;
   box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  background: #fafafa;
+  color: #333;
+}
+.inp:focus {
+  outline: none;
+  border-color: #000;
+  background: #fff;
 }
 .ta {
   width: 100%;
-  font-family: ui-monospace, Consolas, monospace;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, ui-monospace, monospace;
   font-size: 13px;
-  padding: 12px;
+  padding: 8px 10px;
   border: 1px solid #ddd;
-  border-radius: 6px;
+  border-radius: 0;
   box-sizing: border-box;
+  background: #f5f5f5;
+  color: #333;
+  resize: vertical;
+}
+.ta:focus {
+  outline: none;
+  border-color: #000;
+  background: #fff;
 }
 .actions {
-  margin: 12px 0;
+  margin-top: 8px;
 }
-button {
-  padding: 8px 18px;
-  background: #409eff;
+.btn {
+  padding: 6px 16px;
+  background: #000;
   color: #fff;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid #000;
+  border-radius: 0;
   cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
 }
-button:disabled {
-  opacity: 0.6;
+.btn:hover {
+  background: #fff;
+  color: #000;
+}
+.btn:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
+  background: #000;
+  color: #fff;
 }
-.err {
-  color: #c62828;
-  background: #fdecea;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 12px;
+.msg {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fafafa;
 }
-.ok {
-  color: #1b5e20;
-  background: #e8f5e9;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 12px;
+.msg--error {
+  border-left: 3px solid #ccc;
+  color: #000;
 }
-pre {
+.msg--success {
+  border-left: 3px solid #000;
+  color: #000;
+}
+.msg strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #000;
+}
+.msg pre {
   white-space: pre-wrap;
   word-break: break-word;
-  margin: 8px 0 0;
+  margin: 0;
+  font-size: 13px;
+  color: #333;
 }
 </style>

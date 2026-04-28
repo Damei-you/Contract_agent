@@ -60,7 +60,7 @@ const navItems = computed(() => [
 <template>
   <el-container class="layout">
     <el-header class="header">
-      <div class="brand">合同 Agent · MVP</div>
+      <div class="brand">CONTRACT AGENT</div>
       <nav class="nav">
         <!--
           这是最简单的导航实现：router-link + active-class。
@@ -82,7 +82,6 @@ const navItems = computed(() => [
       </div>
     </el-header>
     <el-main class="main">
-      <!-- 页面出口：具体业务逻辑都在 src/pages 下 -->
       <router-view />
     </el-main>
   </el-container>
@@ -95,37 +94,74 @@ const navItems = computed(() => [
 .header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  background: #001529;
+  gap: 16px;
+  background: #000;
   color: #fff;
-  padding: 0 24px;
+  padding: 0 16px;
+  border-bottom: 1px solid #222;
 }
 .brand {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  color: #fff;
+  white-space: nowrap;
 }
 .nav {
   display: flex;
-  gap: 16px;
+  gap: 2px;
   flex: 1;
 }
 .nav-link {
-  color: rgba(255, 255, 255, 0.75);
+  color: #888;
   text-decoration: none;
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 0;
+  font-size: 13px;
+  transition: color 0.2s, background 0.2s;
 }
 .nav-link:hover {
   color: #fff;
+  background: #111;
 }
 .nav-link--active {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  color: #000;
+  background: #fff;
+  position: relative;
+}
+.nav-link--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #333333;
+}
+.nav-link--active:hover {
+  color: #000;
+  background: #fff;
 }
 .ctx {
-  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+}
+.ctx-label {
+  color: #555;
+}
+.ctx-id {
+  color: #aaa;
+  background: #111;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 12px;
 }
 .main {
-  background: #f5f7fa;
+  background: #fff;
+  padding: 0;
 }
 </style>

@@ -56,83 +56,153 @@ async function submit() {
 
 <template>
   <section class="page">
-    <h1>合同问答</h1>
-    <p class="hint">POST <code>/api/contracts/{id}/qa</code></p>
-
-    <div class="field">
-      <label>合同 id</label>
-      <input v-model="contractId" type="text" />
+    <div class="page-header">
+      <h1>合同问答 <span class="endpoint">POST /api/contracts/{id}/qa</span></h1>
     </div>
 
-    <div class="field">
-      <label>问题</label>
-      <textarea v-model="question" rows="3"></textarea>
+    <div class="card">
+      <div class="field">
+        <label class="field-label">合同 id</label>
+        <input v-model="contractId" type="text" class="inp" />
+      </div>
+      <div class="field">
+        <label class="field-label">问题</label>
+        <textarea v-model="question" rows="3" class="inp ta"></textarea>
+      </div>
+      <button :disabled="loading" @click="submit" class="btn">
+        {{ loading ? '询问中…' : '发送问题' }}
+      </button>
     </div>
 
-    <button :disabled="loading" @click="submit">
-      {{ loading ? '询问中…' : '发送问题' }}
-    </button>
+    <div v-if="errorMsg" class="msg msg--error">{{ errorMsg }}</div>
 
-    <div v-if="errorMsg" class="err">{{ errorMsg }}</div>
-
-    <div v-if="result" class="ok">
-      <p><strong>answer：</strong>{{ result.answer }}</p>
-      <p>
-        <strong>retrievedChunkIds：</strong>
-        <code>{{ prettyJson(result.retrievedChunkIds) }}</code>
-      </p>
+    <div v-if="result" class="msg msg--success">
+      <div class="result-item">
+        <span class="result-label">answer</span>
+        <p class="result-text">{{ result.answer }}</p>
+      </div>
+      <div class="result-item">
+        <span class="result-label">retrievedChunkIds</span>
+        <code class="result-code">{{ prettyJson(result.retrievedChunkIds) }}</code>
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped>
 .page {
-  padding: 24px;
+  padding: 20px;
   max-width: 720px;
 }
-.hint {
-  color: #888;
+.page-header {
+  margin-bottom: 12px;
+}
+.page-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+}
+.endpoint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #999;
+  font-family: ui-monospace, Consolas, monospace;
+  margin-left: 12px;
+}
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  padding: 12px;
 }
 .field {
-  margin: 12px 0;
+  margin-bottom: 8px;
 }
-.field label {
+.field-label {
   display: block;
+  font-size: 12px;
   font-weight: 600;
+  color: #333;
   margin-bottom: 4px;
 }
-input,
-textarea {
+.inp {
   width: 100%;
-  padding: 8px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 0;
   box-sizing: border-box;
   font-family: inherit;
+  font-size: 13px;
+  background: #fafafa;
+  color: #333;
 }
-button {
-  padding: 8px 18px;
-  background: #409eff;
+.inp:focus {
+  outline: none;
+  border-color: #000;
+  background: #fff;
+}
+.ta {
+  resize: vertical;
+}
+.btn {
+  padding: 6px 16px;
+  background: #000;
   color: #fff;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid #000;
+  border-radius: 0;
   cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
 }
-button:disabled {
-  opacity: 0.6;
+.btn:hover {
+  background: #fff;
+  color: #000;
+}
+.btn:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
+  background: #000;
+  color: #fff;
 }
-.err {
-  color: #c62828;
-  background: #fdecea;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 12px;
+.msg {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fafafa;
+  font-size: 13px;
+  color: #000;
 }
-.ok {
-  background: #f5f5f5;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 12px;
+.msg--error {
+  border-left: 3px solid #ccc;
+}
+.msg--success {
+  border-left: 3px solid #000;
+}
+.result-item {
+  margin-bottom: 8px;
+}
+.result-item:last-child {
+  margin-bottom: 0;
+}
+.result-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+.result-text {
+  margin: 0;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.6;
+}
+.result-code {
+  font-size: 12px;
+  color: #555;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  display: inline-block;
 }
 </style>

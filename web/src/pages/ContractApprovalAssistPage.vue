@@ -54,84 +54,170 @@ async function submit() {
 
 <template>
   <section class="page">
-    <h1>审批辅助</h1>
-    <p class="hint">POST <code>/api/contracts/{id}/approval-assist</code></p>
-
-    <div class="field">
-      <label>合同 id</label>
-      <input v-model="contractId" type="text" />
-    </div>
-    <div class="field">
-      <label>approverRole</label>
-      <input v-model="approverRole" type="text" />
-    </div>
-    <div class="field">
-      <label>focus</label>
-      <input v-model="focus" type="text" />
+    <div class="page-header">
+      <h1>审批辅助 <span class="endpoint">POST /api/contracts/{id}/approval-assist</span></h1>
     </div>
 
-    <button :disabled="loading" @click="submit">
-      {{ loading ? '生成中…' : '生成建议与清单' }}
-    </button>
+    <div class="card">
+      <div class="field">
+        <label class="field-label">合同 id</label>
+        <input v-model="contractId" type="text" class="inp" />
+      </div>
+      <div class="field">
+        <label class="field-label">approverRole</label>
+        <input v-model="approverRole" type="text" class="inp" />
+      </div>
+      <div class="field">
+        <label class="field-label">focus</label>
+        <input v-model="focus" type="text" class="inp" />
+      </div>
+      <button :disabled="loading" @click="submit" class="btn">
+        {{ loading ? '生成中…' : '生成建议与清单' }}
+      </button>
+    </div>
 
-    <div v-if="errorMsg" class="err">{{ errorMsg }}</div>
+    <div v-if="errorMsg" class="msg msg--error">{{ errorMsg }}</div>
 
-    <div v-if="result" class="ok">
-      <p><strong>suggestion：</strong>{{ result.suggestion }}</p>
-      <p><strong>checklist：</strong></p>
-      <ul>
-        <li v-for="(item, i) in result.checklist" :key="i">{{ item }}</li>
-      </ul>
+    <div v-if="result" class="msg msg--success">
+      <div class="result-item">
+        <span class="result-label">suggestion</span>
+        <p class="result-text">{{ result.suggestion }}</p>
+      </div>
+      <div class="result-item">
+        <span class="result-label">checklist</span>
+        <ul class="checklist">
+          <li v-for="(item, i) in result.checklist" :key="i" class="checklist-item">{{ item }}</li>
+        </ul>
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped>
 .page {
-  padding: 24px;
+  padding: 20px;
   max-width: 720px;
 }
-.hint {
-  color: #888;
+.page-header {
+  margin-bottom: 12px;
+}
+.page-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+}
+.endpoint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #999;
+  font-family: ui-monospace, Consolas, monospace;
+  margin-left: 12px;
+}
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  padding: 12px;
 }
 .field {
-  margin: 12px 0;
+  margin-bottom: 8px;
 }
-.field label {
+.field-label {
   display: block;
+  font-size: 12px;
   font-weight: 600;
+  color: #333;
   margin-bottom: 4px;
 }
-input {
+.inp {
   width: 100%;
-  padding: 8px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 0;
   box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  background: #fafafa;
+  color: #333;
 }
-button {
-  padding: 8px 18px;
-  background: #409eff;
+.inp:focus {
+  outline: none;
+  border-color: #000;
+  background: #fff;
+}
+.btn {
+  padding: 6px 16px;
+  background: #000;
   color: #fff;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid #000;
+  border-radius: 0;
   cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
 }
-button:disabled {
-  opacity: 0.6;
+.btn:hover {
+  background: #fff;
+  color: #000;
+}
+.btn:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
+  background: #000;
+  color: #fff;
 }
-.err {
-  color: #c62828;
-  background: #fdecea;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 12px;
+.msg {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fafafa;
+  font-size: 13px;
+  color: #000;
 }
-.ok {
-  background: #f5f5f5;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 12px;
+.msg--error {
+  border-left: 3px solid #ccc;
+}
+.msg--success {
+  border-left: 3px solid #000;
+}
+.result-item {
+  margin-bottom: 8px;
+}
+.result-item:last-child {
+  margin-bottom: 0;
+}
+.result-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.result-text {
+  margin: 0;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.6;
+}
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.checklist-item {
+  padding: 4px 0 4px 16px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+  color: #333;
+  position: relative;
+}
+.checklist-item:last-child {
+  border-bottom: none;
+}
+.checklist-item::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: #999;
 }
 </style>
