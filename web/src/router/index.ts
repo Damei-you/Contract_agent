@@ -55,6 +55,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/ContractApprovalRecordsImportPage.vue'),
     meta: { title: '审批记录导入' },
   },
+  {
+    // 政策制度知识库导入（独立页面，不需要 contractId）
+    path: '/policies/import',
+    name: 'policies-import',
+    component: () => import('../pages/PolicyKnowledgeImportPage.vue'),
+    meta: { title: '政策制度导入' },
+  },
 ]
 
 /**

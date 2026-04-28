@@ -8,11 +8,10 @@
 
 - 导入合同与条款分块：`/api/contracts/import`
 - 按合同 ID 提问：`/api/contracts/{id}/qa`
-- 内存仓储 + 关键词检索 + 大模型回答
+- PostgreSQL/MyBatis 持久化 + pgvector 检索 + 大模型回答
 
 本阶段暂不包含：
 
-- pgvector / 向量索引
 - 检索重排与效果优化
 - 性能与稳定性增强
 

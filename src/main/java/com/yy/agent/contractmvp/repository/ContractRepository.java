@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * 合同聚合持久化抽象：主数据、条款块、审批记录分层存储。
  * <p>
- * 默认由 {@link MybatisContractRepository} 落 PostgreSQL；{@code test} profile 使用 {@link MockContractRepository}。
+ * 默认由 {@link MybatisContractRepository} 落 PostgreSQL；测试场景在测试代码中提供最小 fake。
  */
 public interface ContractRepository {
 

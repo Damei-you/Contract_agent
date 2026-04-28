@@ -53,3 +53,22 @@ CREATE TABLE IF NOT EXISTS approval_records (
 
 CREATE INDEX IF NOT EXISTS idx_approval_records_contract_id ON approval_records (contract_id);
 CREATE INDEX IF NOT EXISTS idx_approval_records_contract_step ON approval_records (contract_id, step_no);
+
+-- 政策/制度知识库（跨合同共享的业务规则权威数据；向量库为派生检索索引）
+CREATE TABLE IF NOT EXISTS policy_knowledge (
+    policy_id VARCHAR(64) PRIMARY KEY,
+    policy_domain VARCHAR(64) NOT NULL,
+    applies_to_contract_type VARCHAR(255) NOT NULL,
+    severity VARCHAR(16) NOT NULL,
+    trigger_keywords TEXT NOT NULL DEFAULT '',
+    control_objective VARCHAR(255) NOT NULL DEFAULT '',
+    policy_text_for_embedding TEXT NOT NULL,
+    required_evidence TEXT NOT NULL DEFAULT '',
+    escalation_role VARCHAR(255) NOT NULL DEFAULT '',
+    vector_doc_id VARCHAR(128),
+    updated_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_policy_knowledge_domain ON policy_knowledge (policy_domain);
+CREATE INDEX IF NOT EXISTS idx_policy_knowledge_severity ON policy_knowledge (severity);
+CREATE INDEX IF NOT EXISTS idx_policy_knowledge_contract_type ON policy_knowledge (applies_to_contract_type);

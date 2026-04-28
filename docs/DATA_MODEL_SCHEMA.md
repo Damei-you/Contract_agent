@@ -8,6 +8,7 @@
   - `contracts`：合同主数据
   - `clause_chunks`：合同条款分块
   - `approval_records`：合同审批记录
+  - `policy_knowledge`：政策/制度知识库条目
 - 检索索引数据（派生数据）：
   - `vector_store`：pgvector 文档与向量（由 Spring AI 管理）
 
@@ -16,9 +17,11 @@
 - `Contract` -> `contracts`
 - `ClauseChunk` -> `clause_chunks`
 - `ApprovalRecord` -> `approval_records`
+- `PolicyKnowledgeItem` -> `policy_knowledge`
 - 向量文档（由 `ClauseChunk` 派生）-> `vector_store`
+- 向量文档（由 `PolicyKnowledgeItem` 派生）-> `vector_store`
 
-说明：`vector_store` 不作为业务事实来源，合同是否存在、条款原文权威归属仍在业务表。
+说明：`vector_store` 不作为业务事实来源，合同是否存在、条款原文权威归属仍在业务表；制度依据是否有效、字段含义与审批引用关系以 `policy_knowledge` 为准。
 
 ## 3. 表结构（业务库）
 
@@ -102,6 +105,37 @@
 - 索引：`idx_approval_records_contract_id(contract_id)`
 - 索引：`idx_approval_records_contract_step(contract_id, step_no)`
 
+### 3.4 `policy_knowledge`
+
+用途：保存跨合同共享的政策/制度知识库条目，支撑制度 RAG、风险项依据引用和审批辅助核对清单。
+
+| 列名 | 类型 | 非空 | 默认值 | 说明 |
+|---|---|---:|---|---|
+| `policy_id` | `varchar(64)` | Y | - | 制度条目主键，应稳定不变 |
+| `policy_domain` | `varchar(64)` | Y | - | 制度领域，如财务合规、税务合规、资金支付 |
+| `applies_to_contract_type` | `varchar(255)` | Y | - | 适用合同类型，多个值用 `;` 分隔 |
+| `severity` | `varchar(16)` | Y | - | 严重度，映射 `RiskSeverity` |
+| `trigger_keywords` | `text` | Y | `''` | 触发关键词，多个值用 `;` 分隔 |
+| `control_objective` | `varchar(255)` | Y | `''` | 控制目标 |
+| `policy_text_for_embedding` | `text` | Y | - | 用于向量化的制度条文摘要 |
+| `required_evidence` | `text` | Y | `''` | 要求提供的材料/证据，多个值用 `;` 分隔 |
+| `escalation_role` | `varchar(255)` | Y | `''` | 需要升级或会签的角色 |
+| `vector_doc_id` | `varchar(128)` | N | - | 制度条目对应向量文档 ID |
+| `updated_at` | `timestamp with time zone` | N | - | 最近导入或更新日期 |
+
+约束与索引：
+
+- 主键：`pk_policy_knowledge(policy_id)`
+- 建议索引：`idx_policy_knowledge_domain(policy_domain)`
+- 建议索引：`idx_policy_knowledge_severity(severity)`
+- 建议索引：`idx_policy_knowledge_contract_type(applies_to_contract_type)`，用于导入校验和非向量兜底查询。
+
+字段维护约束：
+
+- `policy_id` 是审批记录和风险项引用制度依据的稳定键，已被引用后不建议改名。
+- `policy_text_for_embedding` 应包含“触发条件 + 制度要求 + 例外/补救 + 证据”，避免只写标题导致召回不准。
+- 大制度应拆成可引用的小条目，例如 `POL-TAX-001#S1`，便于风险项关联到具体依据。
+
 ## 4. 向量表结构（检索索引）
 
 ### 4.1 `vector_store`
@@ -112,7 +146,9 @@
 
 - 表通常在应用启动时自动初始化（`initialize-schema=true`）。
 - `embedding` 向量维度必须与 `spring.ai.vectorstore.pgvector.dimensions` 一致。
-- 本项目检索时必须基于 `metadata.contractId` 做合同级过滤。
+- 合同通道检索时必须基于 `metadata.docType=contract_clause` 与 `metadata.contractId` 做合同级过滤。
+- 制度通道检索时必须基于 `metadata.docType=policy` 做知识源过滤，并按当前合同类型收敛。
+- 同一张 `vector_store` 可同时保存合同条款和制度条目，但必须通过 `docType` 区分来源。
 
 说明：该表的具体列名与索引随 Spring AI 版本可能有小差异，以实际 DDL 为准。
 
@@ -120,14 +156,41 @@
 
 请以 `PG_VECTOR_MAPPING_SPEC.md` 为准，核心规则如下：
 
-- `id = {contractId}:{chunkId}`
-- `content = 【{clauseTitle}】\n{textForEmbedding}`
-- `metadata` 最小集合：
-  - `contractId`
-  - `chunkId`
-  - `clauseTitle`
-  - `clauseCode`
-  - `clauseCategory`
+- 合同条款文档：
+  - `id = contract:{contractId}:{chunkId}`
+  - `content = 【{clauseTitle}】\n{textForEmbedding}`
+  - `metadata` 最小集合：
+    - `docType = contract_clause`
+    - `contractId`
+    - `chunkId`
+    - `clauseTitle`
+    - `clauseCode`
+    - `clauseCategory`
+- 制度条目文档：
+  - `id = policy:{policyId}`
+  - `content = 【{policyDomain}/{controlObjective}】\n{policyTextForEmbedding}`
+  - `metadata` 最小集合：
+    - `docType = policy`
+    - `policyId`
+    - `policyDomain`
+    - `appliesToContractType`
+    - `severity`
+    - `triggerKeywords`
+    - `requiredEvidence`
+    - `escalationRole`
+
+兼容说明：如果历史合同向量文档仍使用 `{contractId}:{chunkId}` 作为 ID，检索逻辑仍必须依赖 metadata 过滤，新增文档建议统一使用带命名空间的 ID，避免与 `policyId` 冲突。
+
+### 4.3 风险项与制度依据关联
+
+结构化风险项应同时保留合同依据和制度依据：
+
+- `relatedClauseChunkIds`：合同条款块 ID，必须来自当前 `contractId`。
+- `relatedPolicyIds`：制度条目 ID，必须可在 `policy_knowledge.policy_id` 回查。
+- `requiredEvidence`：可由命中的制度条目生成审批核对清单。
+- `escalationRole`：可由命中的制度条目推荐加签或升级角色。
+
+制度依据只能解释当前合同事实，不应单独生成与合同无关的风险项。
 
 ## 5. 枚举与取值约束
 
@@ -146,7 +209,7 @@
 ## 6. 当前仓储实现与事务边界
 
 - 生产默认（非 test profile）：`MybatisContractRepository`（`@Primary @Profile("!test")`）
-- 测试/演示：`MockContractRepository`（内存）
+- 测试：由测试代码提供最小 fake 仓储，生产代码不保留内存仓储实现。
 - 事务建议：
   - 业务表写入（合同 + 条款）应同事务提交。
   - 向量入库属于派生索引，可采用“业务成功后写索引 + 失败补偿”策略。

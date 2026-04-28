@@ -45,7 +45,7 @@ public class ContractApplicationService {
     private final ObjectProvider<ContractVectorIngestionService> contractVectorIngestionService;
 
     /**
-     * @param contractRepository   合同与条款、审批数据访问（默认 MyBatis + PostgreSQL；test 为内存 Mock）
+     * @param contractRepository   合同与条款、审批数据访问（默认 MyBatis + PostgreSQL）
      * @param aiContractAssistant 封装 RAG、Prompt与大模型调用的助手
      * @param contractVectorIngestionService test profile 下可能无向量 Bean，故用 ObjectProvider
      */
@@ -235,7 +235,9 @@ public class ContractApplicationService {
                     parseRiskTier(d.severity()),
                     nullToEmpty(d.detail()),
                     trimList(d.relatedClauseChunkIds()),
-                    trimList(d.relatedPolicyIds())
+                    trimList(d.relatedPolicyIds()),
+                    trimList(d.requiredEvidence()),
+                    nullToEmpty(d.escalationRole())
             ));
         }
         return out;

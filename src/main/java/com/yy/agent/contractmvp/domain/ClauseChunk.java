@@ -3,7 +3,7 @@ package com.yy.agent.contractmvp.domain;
 import java.util.Objects;
 
 /**
- * 合同条款分块：一条面向向量检索/关键词检索的文本单元，必须归属某合同 {@link Contract#id()}。
+ * 合同条款分块：一条面向向量检索的文本单元，必须归属某合同 {@link Contract#id()}。
  * <ul>
  *   <li>{@code id}：块主键（如 c004）</li>
  *   <li>{@code clauseCode}：内部条款编码（PRICE、PAY 等）</li>
@@ -11,7 +11,7 @@ import java.util.Objects;
  *   <li>{@code partyFocus}：条款更侧重哪一方（甲方/乙方/双方）</li>
  *   <li>{@code riskFlag}：该块在知识库中标注的风险等级</li>
  *   <li>{@code sourceSection}：对应纸质合同章节（如「第4条」）</li>
- *   <li>{@code textForEmbedding}：实际参与向量与关键词匹配的正文</li>
+ *   <li>{@code textForEmbedding}：实际参与向量化与召回的正文</li>
  *   <li>{@code relatedAmountField}：若与金额字段相关可填元数据键名</li>
  *   <li>{@code reviewPriority}：人工配置的审阅优先级提示</li>
  * </ul>

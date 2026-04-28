@@ -40,6 +40,14 @@ spring:
         dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1024}
         max-document-batch-size: 10000
 
+# Application-level batching for vector ingestion. The upstream embedding API may cap input.contents per request:
+#   - DashScope text-embedding-v1/v2/v3 (compatible mode): 10
+#   - OpenAI text-embedding-3-*: 2048
+# VectorBatchWriter slices documents into chunks of this size before calling vectorStore.add(...).
+app:
+  embedding:
+    batch-size: ${EMBEDDING_BATCH_SIZE:10}
+
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   configuration:

@@ -28,10 +28,12 @@ const store = useContractContextStore()
  *
  * 注意：
  * - 除导入页外，其余页面路由都需要 params.id（即 contractId）
- * - 这里统一使用 store.currentContractId 作为 params，保持“全局当前合同”的一致性
+ * - 这里统一使用 store.currentContractId 作为 params，保持"全局当前合同"的一致性
+ * - 政策制度导入是独立页面，不需要 contractId
  */
 const navItems = computed(() => [
   { label: '合同导入', to: { name: 'contracts-import' } },
+  { label: '政策制度导入', to: { name: 'policies-import' } },
   {
     label: '合同问答',
     to: { name: 'contract-qa', params: { id: store.currentContractId } },

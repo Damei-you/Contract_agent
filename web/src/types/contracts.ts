@@ -150,3 +150,31 @@ export interface ApprovalAssistResponse {
   suggestion: string
   checklist: string[]
 }
+
+// ============ 7. 导入政策/制度知识库 ============
+/**
+ * 政策制度条目（对应后端 PolicyKnowledgeItemDto）
+ */
+export interface PolicyKnowledgeItem {
+  policyId: string
+  policyDomain: string
+  appliesToContractType: string
+  severity: string
+  triggerKeywords?: string
+  controlObjective?: string
+  policyTextForEmbedding: string
+  requiredEvidence?: string
+  escalationRole?: string
+  vectorDocId?: string
+  updatedAt?: string | null
+}
+
+export interface PolicyKnowledgeImportRequest {
+  policies: PolicyKnowledgeItem[]
+}
+
+export interface PolicyKnowledgeImportResponse {
+  importedCount: number
+  policyIds: string[]
+  vectorIngestionWarning?: string
+}

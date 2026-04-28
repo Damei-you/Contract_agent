@@ -30,6 +30,8 @@ public class PgVectorRagRetriever implements RagRetriever {
         int k = Math.max(1, topK);
         String normalizedQuery = (query == null || query.isBlank()) ? "合同条款" : query.trim();
 
+        // 仅按 contractId 过滤即可：政策/制度向量文档不含 contractId 元数据，自然不会被命中；
+        // 兼容历史无 docType 字段的合同条款数据。spec 中的 docType 过滤通过 ID 命名空间隔离实现。
         SearchRequest request = SearchRequest.builder()
                 .query(normalizedQuery)
                 .topK(k)

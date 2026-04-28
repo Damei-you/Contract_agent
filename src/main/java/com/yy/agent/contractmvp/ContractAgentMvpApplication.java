@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Spring Boot 入口：扫描本包及子包，装配 Web、Spring AI、领域服务与内存仓储。
+ * Spring Boot 入口：扫描本包及子包，装配 Web、Spring AI、领域服务与持久化组件。
  */
 @SpringBootApplication
 public class ContractAgentMvpApplication {

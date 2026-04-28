@@ -3,9 +3,7 @@ package com.yy.agent.contractmvp.ai.rag;
 import java.util.List;
 
 /**
- * 条款检索抽象：按合同 id 限定范围，根据查询语句返回若干 {@link RagDocument}。
- * <p>
- * MVP 实现为 {@link KeywordRagRetriever}；可新增向量检索实现并切换 Spring Bean。
+ * 条款检索抽象：按合同 id 限定范围，根据查询语句从向量索引返回若干 {@link RagDocument}。
  */
 public interface RagRetriever {
 
