@@ -1,4 +1,24 @@
 <script setup lang="ts">
+/**
+ * 页面：合同导入（/contracts/import）
+ *
+ * 对应后端接口：
+ * - POST /api/contracts/import
+ *
+ * 这是“主链路”的起点页：
+ * - 其余页面（问答/风险检查/审批辅助/审批记录导入）都依赖一个已存在的 contractId
+ * - 所以本页导入成功后，会把返回的 contractId 写入 Pinia store（contractContext）
+ *
+ * 为什么用 JSON 文本域（而不是一堆表单项）：
+ * - 导入合同的字段较多，且 chunks 是数组结构
+ * - MVP 阶段以“联调可用”为第一目标：直接粘贴/修改 JSON 最快
+ *
+ * 调用流程（点击“提交导入”按钮后）：
+ * 1) 解析 textarea 中的 JSON 字符串（JSON.parse）
+ * 2) 调用 api/importContract（src/api/contracts.ts）发请求
+ * 3) 成功：展示响应，并更新 store.currentContractId
+ * 4) 失败：展示统一错误 message，并可附带后端返回的 error body（err.data）
+ */
 import { ref } from 'vue'
 import { importContract } from '../api/contracts'
 import { useContractContextStore } from '../stores/contractContext'
@@ -53,18 +73,23 @@ async function submit() {
   result.value = ''
   let body: unknown
   try {
+    // 1) JSON 解析：让用户可直接粘贴/编辑请求体
     body = JSON.parse(payloadText.value)
   } catch (e) {
     errorMsg.value = 'JSON 解析失败，请检查格式。'
     return
   }
+  // 2) loading：最小防重复提交
   loading.value = true
   try {
+    // 3) 调用 API 封装层（contracts.ts -> http.ts -> Vite proxy -> 后端）
     const resp = await importContract(body as any)
     result.value = prettyJson(resp)
+    // 4) 把 contractId 写入全局上下文，供其他页面默认使用
     store.setCurrentContractId(resp.contractId)
   } catch (e) {
     const err = e as NormalizedHttpError
+    // 失败：err.message 来自 utils/errors.ts 的状态码映射；err.data 是后端错误体（若存在）
     errorMsg.value = `${err.message}${err.data ? '\n' + prettyJson(err.data) : ''}`
   } finally {
     loading.value = false

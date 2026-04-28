@@ -1,4 +1,21 @@
 <script setup lang="ts">
+/**
+ * 页面：审批记录导入（/contracts/:id/approval-records）
+ *
+ * 对应后端接口：
+ * - POST /api/contracts/{id}/approval-records/import
+ *
+ * 语义说明（重要）：
+ * - 这是“全量导入/替换”接口：你提交的 records 会整体替换该合同下的审批历史
+ * - 因为 records 结构较深，MVP 阶段用 JSON 文本域方式最简单、最不容易做错
+ *
+ * 调用流程（点击“全量导入”按钮后）：
+ * 1) 校验 contractId 必填
+ * 2) JSON.parse 解析文本域
+ * 3) 调用 importApprovalRecords(contractId, body)
+ * 4) 成功：展示响应，并写回 store.currentContractId
+ * 5) 失败：展示统一错误文案 + 后端 error body（若存在）
+ */
 import { ref } from 'vue'
 import { useContractContextStore } from '../stores/contractContext'
 import { importApprovalRecords } from '../api/contracts'
@@ -42,12 +59,14 @@ const errorMsg = ref<string>('')
 async function submit() {
   errorMsg.value = ''
   result.value = ''
+  // 1) contractId 必填（后端不存在会返回 404，但前端先挡一次更明确）
   if (!contractId.value.trim()) {
     errorMsg.value = '请输入 contractId'
     return
   }
   let body: unknown
   try {
+    // 2) JSON 解析：让用户可直接粘贴/编辑复杂 records 结构
     body = JSON.parse(payloadText.value)
   } catch {
     errorMsg.value = 'JSON 解析失败，请检查格式。'
@@ -55,11 +74,14 @@ async function submit() {
   }
   loading.value = true
   try {
+    // 3) 调用 API 封装层
     const resp = await importApprovalRecords(contractId.value.trim(), body as any)
     result.value = prettyJson(resp)
+    // 4) 同步全局上下文
     store.setCurrentContractId(contractId.value.trim())
   } catch (e) {
     const err = e as NormalizedHttpError
+    // 失败：统一错误文案 + 可选的后端错误体
     errorMsg.value = `${err.message}${err.data ? '\n' + prettyJson(err.data) : ''}`
   } finally {
     loading.value = false

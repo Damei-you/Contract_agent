@@ -79,48 +79,55 @@ Base URL：`http://localhost:8088`
 - **错误提示与可观测性**：
   - 统一展示 HTTP 状态码（400/404/409/500）与“建议下一步操作”
   - 统一 loading 状态、禁用按钮、防重复提交
-  - 支持一键复制请求 JSON / 响应 JSON（便于排查）
-- **历史记录**（本地存储 localStorage）：
-  - 最近使用的 `contractId`
-  - 最近一次导入合同的请求体（便于重复编辑后再导入新 ID）
-  - 最近一次审批记录导入的请求体
+  - 当前未实现一键复制按钮（用户可手动选中复制）
+- **历史记录**（Pinia 内存状态，当前未实现 localStorage 持久化）：
+  - `currentContractId` 在 Pinia store 中跨页面共享（内存级别，刷新即丢失）
+  - 导入页/审批记录导入页通过 ref 提供默认 JSON 模板，但未持久化上次导入的请求体
+  - 提示：后续可扩展为 localStorage 持久化（参见 `contractContext.ts` 代码注释）
 
 ### 3.2 页面：合同导入 `/contracts/import`
 
-- **输入区域**：
-  - 合同主数据表单（示例字段见 API 文档）：`id/type/partyAName/partyBName/currency/amountExTax/taxRatePct/amountIncTax/signDate/effectiveDate/endDate/performanceSite/paymentTermsSummary/businessOwnerDept/riskTier/vectorDocId/notes`
-  - 支持“只填必需字段 + 默认值”的最小导入模式（其余字段可选）
-- **条款分块（chunks）编辑器**：
-  - 表格编辑：新增/删除/编辑 chunk 行
-  - 校验：
-    - `chunks[].id` 必填且在本合同内唯一
-    - `textForEmbedding` 必填
-  - 便捷功能：
-    - 从 JSON 粘贴导入（覆盖当前 chunks）
-    - 导出当前合同请求体为 JSON（复制到剪贴板）
-- **提交与结果**：
-  - 调用 `POST /api/contracts/import`
-  - 成功：展示 `contractId`，并提供快捷入口跳转到 QA / 风险检查 / 审批辅助 / 审批记录导入
-  - 409：提示“合同 ID 已存在”，建议用户更换 `id`（或后续支持覆盖导入时再调整 UI）
+- **当前实现（MVP 最小可用）**：
+  - 使用 JSON 文本域（`<textarea>`）作为唯一的输入方式，提供一份预填的默认请求体
+  - 用户可直接编辑 JSON 文本域内容，或粘贴自定义 JSON
+  - 点击"提交导入"按钮触发 `POST /api/contracts/import`
+  - 成功：展示 `contractId`，并自动写入 Pinia store（`contractContext.currentContractId`）
+  - 409：通过统一错误提示展示"合同 ID 已存在"
+  - loading 态：按钮禁用 + 文字提示（防重复提交）
+- **与指南的差异说明（当前阶段未实现）**：
+  - 未实现合同主数据表单字段（全部通过 JSON 文本域编辑）
+  - 未实现 chunk 表格编辑器（直接在 JSON 中编辑 `chunks[]`）
+  - 未实现"导出合同请求体为 JSON"复制按钮
+  - 未实现导入成功后跳转到其他页面的快捷入口
 
 ### 3.3 页面：审批记录导入 `/contracts/:id/approval-records`
 
 - **输入区域**：
-  - 以 JSON 编辑器/文本域为主（因为 `records[].riskItems[]/linkedPolicyIds[]/...` 层级较深）
-  - 提供最小模板按钮（生成一份可改的 JSON）
+  - 以 JSON 文本域为主（因为 `records[].riskItems[]/linkedPolicyIds[]/...` 层级较深）
+  - 文本域预填了一份默认 JSON 模板可供编辑，未单独实现"生成模板"按钮
 - **提交与结果**：
+  - 先校验 `contractId` 必填，再 `JSON.parse` 解析文本域
   - 调用 `POST /api/contracts/{id}/approval-records/import`
-  - 成功：展示 `importedCount`，并记录到本地历史
+  - 成功：展示 `importedCount`（JSON 格式化输出）
+- **与指南的差异说明（当前阶段未实现）**：
+  - 未实现独立的"生成模板"按钮（默认 JSON 直接写在源码中预填到文本域）
+  - 未将导入请求体存储到本地历史（仅在页面内展示结果）
 
 ### 3.4 页面：合同问答 `/contracts/:id/qa`
 
 - **输入区域**：
-  - 问题输入框（支持回车提交）
-  - 可选：问题历史（本地保存最近 N 条）
+  - 合同 id 输入框（默认从 Pinia store 读取 `currentContractId`）
+  - 问题文本域（默认预填示例问题）
+  - 点击"发送问题"按钮触发请求（未实现回车提交）
 - **结果展示**：
-  - 展示 `answer`（支持复制）
-  - 展示 `retrievedChunkIds`（以 tag/列表呈现）
-  - 说明：目前无法通过 API 回查 chunk 内容，因此只展示 chunkId；若用户来自“导入页”，可以从导入请求体中反向映射 chunkId->标题/类别并展示（纯前端本地映射，不依赖后端）
+  - 展示 `answer`（纯文本）
+  - 展示 `retrievedChunkIds`（JSON 格式化输出）
+  - 说明：目前无法通过 API 回查 chunk 内容，因此只展示 chunkId
+- **与指南的差异说明（当前阶段未实现）**：
+  - 未实现回车提交
+  - 未实现问题历史（本地保存最近 N 条）
+  - 未实现 answer 一键复制按钮（用户可手动选择复制）
+  - 未实现从导入请求体反向映射 chunkId -> 标题/类别
 
 ### 3.5 页面：风险检查 `/contracts/:id/risk`
 
@@ -133,11 +140,15 @@ Base URL：`http://localhost:8088`
 ### 3.6 页面：审批辅助 `/contracts/:id/approval-assist`
 
 - **输入区域**：
-  - `approverRole`（建议下拉 + 允许自定义输入，如“财务经理/法务经理/业务负责人”）
-  - `focus`（关注点文本，如“付款节点和发票合规”）
+  - 合同 id 输入框（默认从 Pinia store 读取）
+  - `approverRole` 文本输入框（默认"财务经理"，未实现下拉选择）
+  - `focus` 文本输入框（默认"付款节点和发票合规"）
 - **结果展示**：
-  - `suggestion`
-  - `checklist`（勾选式清单 + 一键复制）
+  - `suggestion`（纯文本展示）
+  - `checklist`（无序列表展示，未实现勾选式清单和一键复制功能）
+- **与指南的差异说明（当前阶段未实现）**：
+  - `approverRole` 未实现下拉选择 + 自定义输入（当前为纯文本输入框）
+  - 未实现 checklist 勾选式清单和一键复制
 
 ## 4. 推荐技术栈（Vue 3 + TS）
 
@@ -168,8 +179,8 @@ Base URL：`http://localhost:8088`
 
 ### 4.4 工程质量
 
-- **代码规范**：ESLint + Prettier
-- **单测**：Vitest + Vue Test Utils（重点测试：API 错误提示、表单校验、JSON 模板生成）
+- **代码规范**：当前未配置 ESLint + Prettier（推荐后续加入）
+- **单测**：当前未配置 Vitest + Vue Test Utils（推荐后续加入，重点测试：API 错误提示、表单校验、JSON 模板生成）
 - **E2E（可选）**：Playwright（覆盖：导入->QA->风险检查->审批辅助的主链路）
 
 ## 5. 前端工程结构建议（新增子工程）
@@ -182,14 +193,23 @@ Base URL：`http://localhost:8088`
 contract-agent-mvp/
   docs/
   src/                      # 后端
-  web/                      # 新增：前端
+  web/                      # 前端（Vue 3 + TypeScript）
+    .vscode/extensions.json
     index.html
     vite.config.ts
     package.json
     tsconfig.json
+    tsconfig.app.json
+    tsconfig.node.json
     src/
       main.ts
       App.vue
+      style.css
+      assets/
+        hero.png
+        vite.svg
+        vue.svg
+      components/         # 待扩展（当前为空目录）
       router/
         index.ts
       pages/

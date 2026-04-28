@@ -1,4 +1,18 @@
 <script setup lang="ts">
+/**
+ * 页面：风险检查（/contracts/:id/risk）
+ *
+ * 对应后端接口：
+ * - POST /api/contracts/{id}/risk-check（无请求体）
+ *
+ * 页面目标（最小可用）：
+ * - 输入 contractId，点击按钮触发检查
+ * - 展示 summary + riskItems（列表）
+ *
+ * 常见错误：
+ * - 404：合同不存在（提示先去导入合同）
+ * - 500：服务端异常（可稍后重试）
+ */
 import { ref } from 'vue'
 import { useContractContextStore } from '../stores/contractContext'
 import { checkContractRisk } from '../api/contracts'
@@ -15,13 +29,16 @@ const errorMsg = ref<string>('')
 async function submit() {
   errorMsg.value = ''
   result.value = null
+  // 1) 必填校验：避免发出明显无效的请求
   if (!contractId.value.trim()) {
     errorMsg.value = '请输入 contractId'
     return
   }
   loading.value = true
   try {
+    // 2) 调用风险检查接口（无请求体）
     result.value = await checkContractRisk(contractId.value.trim())
+    // 3) 同步全局上下文：本页成功说明这个 contractId 有效
     store.setCurrentContractId(contractId.value.trim())
   } catch (e) {
     errorMsg.value = (e as NormalizedHttpError).message

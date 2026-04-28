@@ -1,4 +1,17 @@
 <script setup lang="ts">
+/**
+ * 页面：审批辅助（/contracts/:id/approval-assist）
+ *
+ * 对应后端接口：
+ * - POST /api/contracts/{id}/approval-assist
+ *
+ * 页面目标（最小可用）：
+ * - 输入 contractId + approverRole + focus
+ * - 点击按钮生成 suggestion + checklist
+ *
+ * 说明：
+ * - approverRole/focus 在后端会做参数校验；前端先做必填校验可减少 400
+ */
 import { ref } from 'vue'
 import { useContractContextStore } from '../stores/contractContext'
 import { assistApproval } from '../api/contracts'
@@ -17,16 +30,19 @@ const errorMsg = ref<string>('')
 async function submit() {
   errorMsg.value = ''
   result.value = null
+  // 1) 最小必填校验
   if (!contractId.value.trim() || !approverRole.value.trim() || !focus.value.trim()) {
     errorMsg.value = 'contractId / approverRole / focus 均为必填。'
     return
   }
   loading.value = true
   try {
+    // 2) 调用审批辅助接口
     result.value = await assistApproval(contractId.value.trim(), {
       approverRole: approverRole.value,
       focus: focus.value,
     })
+    // 3) 成功后同步全局当前合同 id
     store.setCurrentContractId(contractId.value.trim())
   } catch (e) {
     errorMsg.value = (e as NormalizedHttpError).message
