@@ -4,6 +4,7 @@ import com.yy.agent.contractmvp.ai.rag.PolicyVectorIngestionService;
 import com.yy.agent.contractmvp.api.dto.ImportPolicyKnowledgeRequest;
 import com.yy.agent.contractmvp.api.dto.ImportPolicyKnowledgeResponse;
 import com.yy.agent.contractmvp.api.dto.PolicyKnowledgeItemDto;
+import com.yy.agent.contractmvp.domain.ContractType;
 import com.yy.agent.contractmvp.domain.PolicyKnowledgeItem;
 import com.yy.agent.contractmvp.domain.RiskSeverity;
 import com.yy.agent.contractmvp.repository.PolicyKnowledgeRepository;
@@ -20,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 政策/制度知识库的应用服务层：负责 DTO 校验/规范化、按 {@code policyId} 覆盖落库，
@@ -123,7 +125,7 @@ public class PolicyKnowledgeApplicationService {
         return new PolicyKnowledgeItem(
                 d.policyId().trim(),
                 d.policyDomain().trim(),
-                d.appliesToContractType().trim(),
+                normalizeAppliesTo(d.appliesToContractType().trim()),
                 parseSeverity(d.severity()),
                 nullToEmpty(d.triggerKeywords()),
                 nullToEmpty(d.controlObjective()),
@@ -145,5 +147,21 @@ public class PolicyKnowledgeApplicationService {
 
     private static String nullToEmpty(String s) {
         return s == null ? "" : s;
+    }
+
+    /**
+     * 将 appliesToContractType 中英文/别名归一化为中文展示名：
+     * "procurement;service" → "采购合同;服务合同"，无法识别的值原样保留。
+     */
+    private static String normalizeAppliesTo(String value) {
+        return PolicyKnowledgeItem.splitMulti(value).stream()
+                .map(s -> {
+                    try {
+                        return ContractType.fromFlexible(s).displayName();
+                    } catch (IllegalArgumentException e) {
+                        return s;
+                    }
+                })
+                .collect(Collectors.joining(";"));
     }
 }

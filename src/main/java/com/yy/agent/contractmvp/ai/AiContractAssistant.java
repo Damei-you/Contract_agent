@@ -225,8 +225,7 @@ public class AiContractAssistant {
     }
 
     /**
-     * 解析风险审查模型输出：期望顶层含 {@code summary} 与 {@code riskItems} 数组，每项包含
-     * {@code requiredEvidence}/{@code escalationRole}。失败时返回原文作为 summary、风险列表为空。
+     * 尝试将 LLM 原始输出直接解析为 {@link ContractRiskCheckResponse}，失败时返回原文作为 summary、风险列表为空。
      */
     private ContractRiskCheckResponse parseRiskResponse(String raw) {
         if (raw == null || raw.isBlank()) {

@@ -312,20 +312,6 @@
 - URL：`{{baseUrl}}/api/policies/import`
 - Body：将 `POL-PAY-001` 的 `requiredEvidence` 改为 `"付款条款截图;验收单;发票"`
 - 预期：`200`，同一 `policyId` 被覆盖更新；业务表 `policy_knowledge` 与向量库 `vector_store` 同步覆盖（向量入库实现采用「先 delete 再 add」幂等策略，重复 `policyId` 不会触发主键冲突让整批回滚）
-
-### 用例 4：向量库降级兜底（响应中带 vectorIngestionWarning）
-- 触发条件：嵌入服务超时、`vector_store` 写入异常等运行时故障
-- 预期响应（200）：
-
-```json
-{
-  "importedCount": 15,
-  "policyIds": ["POL-PAY-001", "POL-TAX-001", "..."],
-  "vectorIngestionWarning": "Vector store sync failed: ... . Business table updated; retry import to re-sync."
-}
-```
-- 客户端处理：业务表数据已成功，按相同请求体重试同一接口即可补偿向量同步；不需要清理 `policy_knowledge`
-
 ---
 
 ## 三、`POST /api/contracts/{id}/approval-records/import`（全量导入审批记录）
