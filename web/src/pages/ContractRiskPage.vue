@@ -81,6 +81,15 @@ async function submit() {
           </li>
         </ul>
       </div>
+      <div v-if="result.agentTrace?.length" class="result-item">
+        <span class="result-label">agentTrace</span>
+        <ol class="trace-list">
+          <li v-for="trace in result.agentTrace" :key="trace.agentName" class="trace-item">
+            <span class="trace-agent">{{ trace.agentName }}</span>
+            <span class="trace-summary">{{ trace.summary }}</span>
+          </li>
+        </ol>
+      </div>
     </div>
   </section>
 </template>
@@ -238,5 +247,37 @@ async function submit() {
 }
 .risk-detail {
   color: #666;
+}
+.trace-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: trace;
+}
+.trace-item {
+  counter-increment: trace;
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+  color: #333;
+}
+.trace-item:last-child {
+  border-bottom: none;
+}
+.trace-agent {
+  font-family: ui-monospace, Consolas, monospace;
+  color: #000;
+  white-space: nowrap;
+}
+.trace-agent::before {
+  content: counter(trace) '. ';
+  color: #999;
+}
+.trace-summary {
+  color: #666;
+  line-height: 1.5;
 }
 </style>

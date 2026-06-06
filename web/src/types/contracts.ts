@@ -17,6 +17,11 @@
 export type Severity = 'LOW' | 'MEDIUM' | 'HIGH' | string
 export type RiskTier = 'LOW' | 'MEDIUM' | 'HIGH' | string
 
+export interface AgentTrace {
+  agentName: string
+  summary: string
+}
+
 // ============ 2. 导入合同 ============
 /**
  * “导入合同”是整个前端联调的起点：
@@ -132,6 +137,7 @@ export interface ContractRiskItem {
 export interface ContractRiskCheckResponse {
   summary: string
   riskItems: ContractRiskItem[]
+  agentTrace?: AgentTrace[]
 }
 
 // ============ 6. 审批辅助 ============
@@ -149,6 +155,9 @@ export interface ApprovalAssistRequest {
 export interface ApprovalAssistResponse {
   suggestion: string
   checklist: string[]
+  retrievedChunkIds?: string[]
+  retrievedPolicyIds?: string[]
+  agentTrace?: AgentTrace[]
 }
 
 // ============ 7. 导入政策/制度知识库 ============

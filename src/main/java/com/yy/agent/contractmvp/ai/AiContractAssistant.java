@@ -2,6 +2,9 @@ package com.yy.agent.contractmvp.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yy.agent.contractmvp.ai.agent.AgentContext;
+import com.yy.agent.contractmvp.ai.agent.AgentResult;
+import com.yy.agent.contractmvp.ai.agent.MultiAgentOrchestrator;
 import com.yy.agent.contractmvp.ai.prompt.ContractPrompts;
 import com.yy.agent.contractmvp.ai.rag.PolicyRagDocument;
 import com.yy.agent.contractmvp.ai.rag.PolicyRagRetriever;
@@ -46,6 +49,7 @@ public class AiContractAssistant {
     private final ObjectProvider<PolicyRagRetriever> policyRagRetriever;
     private final ContractToolExecutor toolExecutor;
     private final ObjectMapper objectMapper;
+    private final MultiAgentOrchestrator orchestrator;
 
     /**
      * @param chatClientBuilder 构建独立 {@link ChatClient} 实例
@@ -59,13 +63,15 @@ public class AiContractAssistant {
             ObjectProvider<RagRetriever> ragRetriever,
             ObjectProvider<PolicyRagRetriever> policyRagRetriever,
             ContractToolExecutor toolExecutor,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            MultiAgentOrchestrator orchestrator
     ) {
         this.chatClient = chatClientBuilder.build();
         this.ragRetriever = ragRetriever;
         this.policyRagRetriever = policyRagRetriever;
         this.toolExecutor = toolExecutor;
         this.objectMapper = objectMapper;
+        this.orchestrator = orchestrator;
     }
 
     /**
@@ -102,21 +108,24 @@ public class AiContractAssistant {
      * @return 总结与 {@link RiskItem} 列表；解析失败时原文落入 summary
      */
     public ContractRiskCheckResponse riskCheck(String contractId) {
-        Contract contract = toolExecutor.requireContract(contractId);
+        AgentContext context = new AgentContext("risk-check", contractId);
         String broadQuery = "价格 付款 发票 税务 验收 质保 违约 责任 保密 分包 数据 驻场";
-        List<RagDocument> clauseDocs = retrieveClauses(contractId, broadQuery, RAG_TOP_K);
-        List<PolicyRagDocument> policyDocs = retrievePolicies(contract.type(), broadQuery, POLICY_TOP_K);
-        String clauseContext = buildClauseContext(clauseDocs);
-        String policyContext = buildPolicyContext(policyDocs);
-        String summary = toolExecutor.contractSummary(contractId);
-        String approvals = toolExecutor.approvalHistoryDigest(contractId);
-        String user = ContractPrompts.riskCheckUser(summary, clauseContext, policyContext, approvals);
-        String raw = chatClient.prompt()
-                .system(ContractPrompts.riskCheckSystem())
-                .user(user)
-                .call()
-                .content();
-        return parseRiskResponse(raw);
+        ContractEvidence contractEvidence = orchestrator.run(
+                context,
+                this::contractFactAgent,
+                new ContractFactRequest(contractId, broadQuery, true)
+        );
+        PolicyEvidence policyEvidence = orchestrator.run(
+                context,
+                this::policyEvidenceAgent,
+                new PolicyEvidenceRequest(contractEvidence.contract().type(), broadQuery)
+        );
+        ContractRiskCheckResponse response = orchestrator.run(
+                context,
+                this::riskReviewAgent,
+                new RiskReviewRequest(contractEvidence, policyEvidence)
+        );
+        return new ContractRiskCheckResponse(response.summary(), response.riskItems(), context.traces());
     }
 
     /**
@@ -128,27 +137,124 @@ public class AiContractAssistant {
      * @return 建议与核对项及命中来源
      */
     public ApprovalAssistResponse approvalAssist(String contractId, String approverRole, String focus) {
-        Contract contract = toolExecutor.requireContract(contractId);
+        AgentContext context = new AgentContext("approval-assist", contractId);
         String q = (approverRole + " " + focus + " 审批 财务 法务 发票 验收 保密 分包").trim();
-        List<RagDocument> clauseDocs = retrieveClauses(contractId, q, RAG_TOP_K);
-        List<PolicyRagDocument> policyDocs = retrievePolicies(contract.type(), q, POLICY_TOP_K);
-        String clauseContext = buildClauseContext(clauseDocs);
-        String policyContext = buildPolicyContext(policyDocs);
-        String summary = toolExecutor.contractSummary(contractId);
-        String approvals = toolExecutor.approvalHistoryDigest(contractId);
+        ContractEvidence contractEvidence = orchestrator.run(
+                context,
+                this::contractFactAgent,
+                new ContractFactRequest(contractId, q, true)
+        );
+        PolicyEvidence policyEvidence = orchestrator.run(
+                context,
+                this::policyEvidenceAgent,
+                new PolicyEvidenceRequest(contractEvidence.contract().type(), q)
+        );
+        ApprovalAssistResponse response = orchestrator.run(
+                context,
+                this::approvalAdviceAgent,
+                new ApprovalAdviceRequest(approverRole, focus, contractEvidence, policyEvidence)
+        );
+        return new ApprovalAssistResponse(
+                response.suggestion(),
+                response.checklist(),
+                response.retrievedChunkIds(),
+                response.retrievedPolicyIds(),
+                context.traces()
+        );
+    }
+
+    /**
+     * 合同事实 Agent：负责读取合同主数据、合同条款 RAG 命中和可选审批历史。
+     * <p>
+     * 该 Agent 只整理“当前合同事实”，不引入制度判断，避免把制度要求误写成合同已约定内容。
+     */
+    private AgentResult<ContractEvidence> contractFactAgent(AgentContext context, ContractFactRequest request) {
+        Contract contract = toolExecutor.requireContract(request.contractId());
+        List<RagDocument> clauseDocs = retrieveClauses(request.contractId(), request.query(), RAG_TOP_K);
+        String summary = toolExecutor.contractSummary(request.contractId());
+        String approvals = request.includeApprovalHistory()
+                ? toolExecutor.approvalHistoryDigest(request.contractId())
+                : "";
+        ContractEvidence output = new ContractEvidence(
+                contract,
+                clauseDocs,
+                summary,
+                buildClauseContext(clauseDocs),
+                approvals
+        );
+        String trace = "已加载合同事实，并命中 %d 个合同条款片段。".formatted(clauseDocs.size());
+        return AgentResult.of(output, "ContractFactAgent", trace);
+    }
+
+    /**
+     * 制度依据 Agent：按合同类型和查询语义召回适用制度。
+     * <p>
+     * 该 Agent 只提供制度证据，不直接生成风险结论；风险判断由下游审查 Agent 完成。
+     */
+    private AgentResult<PolicyEvidence> policyEvidenceAgent(AgentContext context, PolicyEvidenceRequest request) {
+        List<PolicyRagDocument> policyDocs = retrievePolicies(request.contractType(), request.query(), POLICY_TOP_K);
+        PolicyEvidence output = new PolicyEvidence(policyDocs, buildPolicyContext(policyDocs));
+        String trace = "已按合同类型「%s」命中 %d 条制度依据。".formatted(
+                request.contractType().displayName(),
+                policyDocs.size()
+        );
+        return AgentResult.of(output, "PolicyEvidenceAgent", trace);
+    }
+
+    /**
+     * 风险审查 Agent：基于合同事实、制度依据和审批历史生成结构化风险项。
+     * <p>
+     * 上游 Agent 已经区分合同事实与制度依据，本 Agent 只负责把二者进行对照审查并解析模型 JSON。
+     */
+    private AgentResult<ContractRiskCheckResponse> riskReviewAgent(
+            AgentContext context,
+            RiskReviewRequest request
+    ) {
+        String user = ContractPrompts.riskCheckUser(
+                request.contractEvidence().summary(),
+                request.contractEvidence().clauseContext(),
+                request.policyEvidence().policyContext(),
+                request.contractEvidence().approvalHistory()
+        );
+        String raw = chatClient.prompt()
+                .system(ContractPrompts.riskCheckSystem())
+                .user(user)
+                .call()
+                .content();
+        ContractRiskCheckResponse response = parseRiskResponse(raw);
+        String trace = "已生成 %d 个结构化风险项。".formatted(response.riskItems().size());
+        return AgentResult.of(response, "RiskReviewAgent", trace);
+    }
+
+    /**
+     * 审批建议 Agent：面向当前审批角色生成建议结论和核对清单。
+     * <p>
+     * 输出中保留合同条款 id 与制度 id，便于前端后续展示溯源证据。
+     */
+    private AgentResult<ApprovalAssistResponse> approvalAdviceAgent(
+            AgentContext context,
+            ApprovalAdviceRequest request
+    ) {
         String user = ContractPrompts.approvalAssistUser(
-                approverRole, focus, summary, clauseContext, policyContext, approvals
+                request.approverRole(),
+                request.focus(),
+                request.contractEvidence().summary(),
+                request.contractEvidence().clauseContext(),
+                request.policyEvidence().policyContext(),
+                request.contractEvidence().approvalHistory()
         );
         String raw = chatClient.prompt()
                 .system(ContractPrompts.approvalAssistSystem())
                 .user(user)
                 .call()
                 .content();
-        return parseAssistResponse(
+        ApprovalAssistResponse response = parseAssistResponse(
                 raw,
-                clauseDocs.stream().map(RagDocument::id).toList(),
-                policyDocs.stream().map(PolicyRagDocument::policyId).toList()
+                request.contractEvidence().clauseDocs().stream().map(RagDocument::id).toList(),
+                request.policyEvidence().policyDocs().stream().map(PolicyRagDocument::policyId).toList()
         );
+        String trace = "已生成审批建议，并产出 %d 个核对项。".formatted(response.checklist().size());
+        return AgentResult.of(response, "ApprovalAdviceAgent", trace);
     }
 
     /**
@@ -318,5 +424,68 @@ public class AiContractAssistant {
             }
         }
         return out;
+    }
+
+    /**
+     * 合同事实 Agent 输入。
+     *
+     * @param contractId              合同 id
+     * @param query                   用于条款检索的查询文本
+     * @param includeApprovalHistory  是否附带审批历史摘要
+     */
+    private record ContractFactRequest(String contractId, String query, boolean includeApprovalHistory) {
+    }
+
+    /**
+     * 制度依据 Agent 输入。
+     *
+     * @param contractType 合同类型，用于收敛制度适用范围
+     * @param query        用于制度检索的查询文本
+     */
+    private record PolicyEvidenceRequest(ContractType contractType, String query) {
+    }
+
+    /**
+     * 风险审查 Agent 输入：由上游事实 Agent 和制度 Agent 的输出组成。
+     */
+    private record RiskReviewRequest(ContractEvidence contractEvidence, PolicyEvidence policyEvidence) {
+    }
+
+    /**
+     * 审批建议 Agent 输入：审批角色信息加上合同事实和制度依据。
+     */
+    private record ApprovalAdviceRequest(
+            String approverRole,
+            String focus,
+            ContractEvidence contractEvidence,
+            PolicyEvidence policyEvidence
+    ) {
+    }
+
+    /**
+     * 合同事实 Agent 输出。
+     *
+     * @param contract        合同领域对象
+     * @param clauseDocs      条款检索命中
+     * @param summary         合同主数据摘要
+     * @param clauseContext   可拼入 Prompt 的条款上下文
+     * @param approvalHistory 审批历史摘要，可为空
+     */
+    private record ContractEvidence(
+            Contract contract,
+            List<RagDocument> clauseDocs,
+            String summary,
+            String clauseContext,
+            String approvalHistory
+    ) {
+    }
+
+    /**
+     * 制度依据 Agent 输出。
+     *
+     * @param policyDocs     制度检索命中
+     * @param policyContext  可拼入 Prompt 的制度依据上下文
+     */
+    private record PolicyEvidence(List<PolicyRagDocument> policyDocs, String policyContext) {
     }
 }
