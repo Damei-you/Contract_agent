@@ -20,6 +20,8 @@ export type RiskTier = 'LOW' | 'MEDIUM' | 'HIGH' | string
 export interface AgentTrace {
   agentName: string
   summary: string
+  retrievedChunkIds?: string[]
+  retrievedPolicyIds?: string[]
 }
 
 // ============ 2. 导入合同 ============
@@ -31,9 +33,21 @@ export interface AgentTrace {
 
 export interface ContractChunk {
   id: string
+  contractId?: string
   clauseCode?: string
   clauseTitle?: string
   clauseCategory?: string
+  sourceSection?: string
+  textForEmbedding: string
+}
+
+export interface ContractClauseChunk {
+  id: string
+  contractId: string
+  clauseCode: string
+  clauseTitle: string
+  clauseCategory: string
+  sourceSection: string
   textForEmbedding: string
 }
 
@@ -59,10 +73,30 @@ export interface ContractImportRequest {
   vectorDocId?: string
   notes?: string
   chunks: ContractChunk[]
+  overwriteConfirmed?: boolean
 }
 
 export interface ContractImportResponse {
   contractId: string
+  imported: boolean
+  overwritten: boolean
+  requiresConfirmation: boolean
+  message: string
+}
+
+export interface ParsedFileMetadata {
+  filename: string
+  contentType: string
+  detectedContentType: string
+  size: number
+  textLength: number
+  warnings: string[]
+}
+
+export interface ContractFileParseResponse {
+  document: ParsedFileMetadata
+  draft: ContractImportRequest
+  chunkCount: number
 }
 
 // ============ 3. 导入审批记录 ============
@@ -106,17 +140,33 @@ export interface ApprovalRecordsImportResponse {
 // ============ 4. 合同问答 ============
 /**
  * 问答接口是“读 + 生成”：
- * - 输入一个 question，返回 answer + retrievedChunkIds（命中的条款 chunk id 列表）
- * - 目前后端不提供 chunk 内容回查，所以前端先展示 chunkId（联调足够）
+ * - 输入 question，默认只检索合同条款
+ * - includePolicyEvidence=true 时额外检索适用制度依据
  */
 
 export interface ContractQaRequest {
   question: string
+  includePolicyEvidence?: boolean
 }
 
 export interface ContractQaResponse {
   answer: string
   retrievedChunkIds: string[]
+  retrievedPolicyIds: string[]
+  agentTrace?: AgentTrace[]
+}
+
+// ============ 4.1 政策制度问答 ============
+
+export interface PolicyQaRequest {
+  question: string
+  contractType?: string
+}
+
+export interface PolicyQaResponse {
+  answer: string
+  retrievedPolicyIds: string[]
+  agentTrace?: AgentTrace[]
 }
 
 // ============ 5. 风险检查 ============
@@ -178,6 +228,20 @@ export interface PolicyKnowledgeItem {
   updatedAt?: string | null
 }
 
+export interface PolicyKnowledgeDetail {
+  policyId: string
+  policyDomain: string
+  appliesToContractType: string
+  severity: Severity
+  triggerKeywords: string
+  controlObjective: string
+  policyTextForEmbedding: string
+  requiredEvidence: string
+  escalationRole: string
+  vectorDocId?: string | null
+  updatedAt?: string | null
+}
+
 export interface PolicyKnowledgeImportRequest {
   policies: PolicyKnowledgeItem[]
 }
@@ -186,4 +250,10 @@ export interface PolicyKnowledgeImportResponse {
   importedCount: number
   policyIds: string[]
   vectorIngestionWarning?: string
+}
+
+export interface PolicyKnowledgeFileParseResponse {
+  document: ParsedFileMetadata
+  draft: PolicyKnowledgeImportRequest
+  policyCount: number
 }

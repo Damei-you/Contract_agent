@@ -2,6 +2,11 @@ spring:
   application:
     name: contract-agent-mvp
 
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
   # PostgreSQL (pgvector); use compose.yaml in this module or:
   # docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres pgvector/pgvector:pg16
   datasource:

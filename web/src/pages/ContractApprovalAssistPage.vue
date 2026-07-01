@@ -1,18 +1,9 @@
 <script setup lang="ts">
 /**
  * 页面：审批辅助（/contracts/:id/approval-assist）
- *
- * 对应后端接口：
- * - POST /api/contracts/{id}/approval-assist
- *
- * 页面目标（最小可用）：
- * - 输入 contractId + approverRole + focus
- * - 点击按钮生成 suggestion + checklist
- *
- * 说明：
- * - approverRole/focus 在后端会做参数校验；前端先做必填校验可减少 400
  */
 import { ref } from 'vue'
+import AgentTraceEvidencePanel from '../components/AgentTraceEvidencePanel.vue'
 import { useContractContextStore } from '../stores/contractContext'
 import { assistApproval } from '../api/contracts'
 import type { NormalizedHttpError } from '../api/http'
@@ -25,25 +16,26 @@ const approverRole = ref('财务经理')
 const focus = ref('付款节点和发票合规')
 const loading = ref(false)
 const result = ref<ApprovalAssistResponse | null>(null)
+const resultContractId = ref('')
 const errorMsg = ref<string>('')
 
 async function submit() {
   errorMsg.value = ''
   result.value = null
-  // 1) 最小必填校验
+  resultContractId.value = ''
   if (!contractId.value.trim() || !approverRole.value.trim() || !focus.value.trim()) {
     errorMsg.value = 'contractId / approverRole / focus 均为必填。'
     return
   }
   loading.value = true
   try {
-    // 2) 调用审批辅助接口
-    result.value = await assistApproval(contractId.value.trim(), {
+    const submittedContractId = contractId.value.trim()
+    result.value = await assistApproval(submittedContractId, {
       approverRole: approverRole.value,
       focus: focus.value,
     })
-    // 3) 成功后同步全局当前合同 id
-    store.setCurrentContractId(contractId.value.trim())
+    resultContractId.value = submittedContractId
+    store.setCurrentContractId(submittedContractId)
   } catch (e) {
     errorMsg.value = (e as NormalizedHttpError).message
   } finally {
@@ -58,46 +50,47 @@ async function submit() {
       <h1>审批辅助 <span class="endpoint">POST /api/contracts/{id}/approval-assist</span></h1>
     </div>
 
-    <div class="card">
-      <div class="field">
-        <label class="field-label">合同 id</label>
-        <input v-model="contractId" type="text" class="inp" />
-      </div>
-      <div class="field">
-        <label class="field-label">approverRole</label>
-        <input v-model="approverRole" type="text" class="inp" />
-      </div>
-      <div class="field">
-        <label class="field-label">focus</label>
-        <input v-model="focus" type="text" class="inp" />
-      </div>
-      <button :disabled="loading" @click="submit" class="btn">
-        {{ loading ? '生成中…' : '生成建议与清单' }}
-      </button>
-    </div>
+    <div class="layout">
+      <main class="main-col">
+        <div class="card">
+          <div class="field">
+            <label class="field-label">合同 id</label>
+            <input v-model="contractId" type="text" class="inp" />
+          </div>
+          <div class="field">
+            <label class="field-label">approverRole</label>
+            <input v-model="approverRole" type="text" class="inp" />
+          </div>
+          <div class="field">
+            <label class="field-label">focus</label>
+            <input v-model="focus" type="text" class="inp" />
+          </div>
+          <button :disabled="loading" @click="submit" class="btn">
+            {{ loading ? '生成中...' : '生成建议与清单' }}
+          </button>
+        </div>
 
-    <div v-if="errorMsg" class="msg msg--error">{{ errorMsg }}</div>
+        <div v-if="errorMsg" class="msg msg--error">{{ errorMsg }}</div>
 
-    <div v-if="result" class="msg msg--success">
-      <div class="result-item">
-        <span class="result-label">suggestion</span>
-        <p class="result-text">{{ result.suggestion }}</p>
-      </div>
-      <div class="result-item">
-        <span class="result-label">checklist</span>
-        <ul class="checklist">
-          <li v-for="(item, i) in result.checklist" :key="i" class="checklist-item">{{ item }}</li>
-        </ul>
-      </div>
-      <div v-if="result.agentTrace?.length" class="result-item">
-        <span class="result-label">agentTrace</span>
-        <ol class="trace-list">
-          <li v-for="trace in result.agentTrace" :key="trace.agentName" class="trace-item">
-            <span class="trace-agent">{{ trace.agentName }}</span>
-            <span class="trace-summary">{{ trace.summary }}</span>
-          </li>
-        </ol>
-      </div>
+        <div v-if="result" class="msg msg--success">
+          <div class="result-item">
+            <span class="result-label">suggestion</span>
+            <p class="result-text">{{ result.suggestion }}</p>
+          </div>
+          <div class="result-item">
+            <span class="result-label">checklist</span>
+            <ul class="checklist">
+              <li v-for="(item, i) in result.checklist" :key="i" class="checklist-item">{{ item }}</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+
+      <AgentTraceEvidencePanel
+        :contract-id="resultContractId || contractId"
+        :traces="result?.agentTrace ?? []"
+        subtitle="建议和清单引用的证据"
+      />
     </div>
   </section>
 </template>
@@ -105,7 +98,7 @@ async function submit() {
 <style scoped>
 .page {
   padding: 20px;
-  max-width: 720px;
+  max-width: 1480px;
 }
 .page-header {
   margin-bottom: 12px;
@@ -122,6 +115,15 @@ async function submit() {
   color: #999;
   font-family: ui-monospace, Consolas, monospace;
   margin-left: 12px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(440px, 560px);
+  gap: 16px;
+  align-items: start;
+}
+.main-col {
+  min-width: 0;
 }
 .card {
   background: #fff;
@@ -224,41 +226,17 @@ async function submit() {
   border-bottom: none;
 }
 .checklist-item::before {
-  content: '—';
+  content: '-';
   position: absolute;
   left: 0;
   color: #999;
 }
-.trace-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  counter-reset: trace;
-}
-.trace-item {
-  counter-increment: trace;
-  display: grid;
-  grid-template-columns: 150px 1fr;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
-  font-size: 13px;
-  color: #333;
-}
-.trace-item:last-child {
-  border-bottom: none;
-}
-.trace-agent {
-  font-family: ui-monospace, Consolas, monospace;
-  color: #000;
-  white-space: nowrap;
-}
-.trace-agent::before {
-  content: counter(trace) '. ';
-  color: #999;
-}
-.trace-summary {
-  color: #666;
-  line-height: 1.5;
+@media (max-width: 960px) {
+  .page {
+    max-width: none;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

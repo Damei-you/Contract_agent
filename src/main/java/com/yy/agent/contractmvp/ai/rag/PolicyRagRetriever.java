@@ -22,4 +22,15 @@ public interface PolicyRagRetriever {
      * @return 命中列表，可为空
      */
     List<PolicyRagDocument> retrieve(ContractType contractType, String query, int topK);
+
+    /**
+     * 不限定合同类型检索制度依据片段，供“政策制度问答”等全局制度场景使用。
+     *
+     * @param query 检索语句
+     * @param topK  返回条数上限，实现侧应保证至少为 1
+     * @return 命中列表，可为空
+     */
+    default List<PolicyRagDocument> retrieve(String query, int topK) {
+        return List.of();
+    }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yy.agent.contractmvp.ai.agent.AgentContext;
 import com.yy.agent.contractmvp.ai.agent.AgentResult;
+import com.yy.agent.contractmvp.ai.agent.AgentTrace;
 import com.yy.agent.contractmvp.ai.agent.MultiAgentOrchestrator;
 import com.yy.agent.contractmvp.ai.prompt.ContractPrompts;
 import com.yy.agent.contractmvp.ai.rag.PolicyRagDocument;
@@ -14,6 +15,7 @@ import com.yy.agent.contractmvp.ai.tool.ContractToolExecutor;
 import com.yy.agent.contractmvp.api.dto.ApprovalAssistResponse;
 import com.yy.agent.contractmvp.api.dto.ContractQaResponse;
 import com.yy.agent.contractmvp.api.dto.ContractRiskCheckResponse;
+import com.yy.agent.contractmvp.api.dto.PolicyQaResponse;
 import com.yy.agent.contractmvp.domain.Contract;
 import com.yy.agent.contractmvp.domain.ContractType;
 import com.yy.agent.contractmvp.domain.RiskItem;
@@ -75,16 +77,19 @@ public class AiContractAssistant {
     }
 
     /**
-     * 合同问答：双通道 RAG（合同条款 + 制度依据），返回模型回答与两通道命中 id 列表。
+     * 合同问答：默认只检索合同条款；用户显式开启时额外检索制度依据。
      *
-     * @param contractId 合同 id（须已存在）
-     * @param question   用户问题
-     * @return 回答与两通道命中 id 列表
+     * @param contractId              合同 id（须已存在）
+     * @param question                用户问题
+     * @param includePolicyEvidence   是否同时引用制度依据
+     * @return 回答与命中 id 列表
      */
-    public ContractQaResponse answerQuestion(String contractId, String question) {
+    public ContractQaResponse answerQuestion(String contractId, String question, boolean includePolicyEvidence) {
         Contract contract = toolExecutor.requireContract(contractId);
         List<RagDocument> clauseDocs = retrieveClauses(contractId, question, RAG_TOP_K);
-        List<PolicyRagDocument> policyDocs = retrievePolicies(contract.type(), question, POLICY_TOP_K);
+        List<PolicyRagDocument> policyDocs = includePolicyEvidence
+                ? retrievePolicies(contract.type(), question, POLICY_TOP_K)
+                : List.of();
         String clauseContext = buildClauseContext(clauseDocs);
         String policyContext = buildPolicyContext(policyDocs);
         String summary = toolExecutor.contractSummary(contractId);
@@ -97,7 +102,63 @@ public class AiContractAssistant {
         return new ContractQaResponse(
                 answer == null ? "" : answer,
                 clauseDocs.stream().map(RagDocument::id).toList(),
-                policyDocs.stream().map(PolicyRagDocument::policyId).toList()
+                policyDocs.stream().map(PolicyRagDocument::policyId).toList(),
+                buildQaTrace(clauseDocs, policyDocs, includePolicyEvidence)
+        );
+    }
+
+    private static List<AgentTrace> buildQaTrace(
+            List<RagDocument> clauseDocs,
+            List<PolicyRagDocument> policyDocs,
+            boolean includePolicyEvidence
+    ) {
+        List<AgentTrace> traces = new ArrayList<>();
+        traces.add(new AgentTrace(
+                "ContractFactAgent",
+                "已按问题检索合同条款，命中 %d 个合同条款片段。".formatted(clauseDocs.size()),
+                clauseDocs.stream().map(RagDocument::id).toList(),
+                List.of()
+        ));
+        if (includePolicyEvidence) {
+            traces.add(new AgentTrace(
+                    "PolicyEvidenceAgent",
+                    "已按问题和合同类型检索制度依据，命中 %d 条制度依据。".formatted(policyDocs.size()),
+                    List.of(),
+                    policyDocs.stream().map(PolicyRagDocument::policyId).toList()
+            ));
+        }
+        return traces;
+    }
+
+    /**
+     * 政策/制度问答：只基于制度知识库 RAG 作答，可选按合同类型收敛适用范围。
+     *
+     * @param question         用户问题
+     * @param contractTypeText 可选合同类型文本
+     * @return 回答与命中的制度依据 id 列表
+     */
+    public PolicyQaResponse answerPolicyQuestion(String question, String contractTypeText) {
+        ContractType contractType = parseOptionalContractType(contractTypeText);
+        List<PolicyRagDocument> policyDocs = contractType == null
+                ? retrievePolicies(question, POLICY_TOP_K)
+                : retrievePolicies(contractType, question, POLICY_TOP_K);
+        List<String> policyIds = policyDocs.stream().map(PolicyRagDocument::policyId).toList();
+        String scope = contractType == null ? "不限" : contractType.displayName();
+        String user = ContractPrompts.policyQaUser(scope, buildPolicyContext(policyDocs), question);
+        String answer = chatClient.prompt()
+                .system(ContractPrompts.policyQaSystem())
+                .user(user)
+                .call()
+                .content();
+        return new PolicyQaResponse(
+                answer == null ? "" : answer,
+                policyIds,
+                List.of(new AgentTrace(
+                        "PolicyEvidenceAgent",
+                        "已按合同类型范围「%s」检索制度依据，命中 %d 条。".formatted(scope, policyDocs.size()),
+                        List.of(),
+                        policyIds
+                ))
         );
     }
 
@@ -183,7 +244,13 @@ public class AiContractAssistant {
                 approvals
         );
         String trace = "已加载合同事实，并命中 %d 个合同条款片段。".formatted(clauseDocs.size());
-        return AgentResult.of(output, "ContractFactAgent", trace);
+        return AgentResult.of(
+                output,
+                "ContractFactAgent",
+                trace,
+                clauseDocs.stream().map(RagDocument::id).toList(),
+                List.of()
+        );
     }
 
     /**
@@ -198,7 +265,13 @@ public class AiContractAssistant {
                 request.contractType().displayName(),
                 policyDocs.size()
         );
-        return AgentResult.of(output, "PolicyEvidenceAgent", trace);
+        return AgentResult.of(
+                output,
+                "PolicyEvidenceAgent",
+                trace,
+                List.of(),
+                policyDocs.stream().map(PolicyRagDocument::policyId).toList()
+        );
     }
 
     /**
@@ -279,6 +352,29 @@ public class AiContractAssistant {
         }
         List<PolicyRagDocument> docs = retriever.retrieve(type, query, topK);
         return docs == null ? List.of() : docs;
+    }
+
+    /**
+     * 制度问答通道软调用：不限定合同类型，面向全局制度知识库检索。
+     */
+    private List<PolicyRagDocument> retrievePolicies(String query, int topK) {
+        PolicyRagRetriever retriever = policyRagRetriever.getIfAvailable();
+        if (retriever == null) {
+            return List.of();
+        }
+        List<PolicyRagDocument> docs = retriever.retrieve(query, topK);
+        return docs == null ? List.of() : docs;
+    }
+
+    private static ContractType parseOptionalContractType(String contractTypeText) {
+        if (contractTypeText == null || contractTypeText.isBlank()) {
+            return null;
+        }
+        try {
+            return ContractType.fromFlexible(contractTypeText);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("unsupported contractType: " + contractTypeText, e);
+        }
     }
 
     /**

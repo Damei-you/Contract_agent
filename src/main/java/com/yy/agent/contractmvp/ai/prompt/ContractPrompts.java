@@ -3,8 +3,8 @@ package com.yy.agent.contractmvp.ai.prompt;
 /**
  * 合同场景 Prompt 文本工厂：集中管理系统提示词与用户消息拼装格式，避免散落在调用处。
  * <p>
- * 双通道 RAG 约定：用户消息按「合同条款上下文」「制度依据上下文」「合同摘要」三段拼装，
- * 模型必须区分合同事实与制度要求，避免把通用制度要求误写为合同已约定内容。
+ * RAG 约定：用户消息按「合同摘要」「合同条款上下文」「制度依据上下文」拼装；
+ * 制度依据上下文可为空，模型必须区分合同事实与制度要求，避免把通用制度要求误写为合同已约定内容。
  */
 public final class ContractPrompts {
 
@@ -23,7 +23,9 @@ public final class ContractPrompts {
         return """
                 你是企业财务与法务方向的合同问答助手。请仅依据提供的「合同摘要」「合同条款上下文」「制度依据上下文」作答。
                 注意区分两类来源：合同条款是当前合同的事实，制度依据是公司内部规范要求。
-                若问题与合同事实有关而条款上下文不足，请明确说明缺少的信息；制度依据可用于解释、校验或提示，但不要把制度要求误写成合同已约定内容。
+                若问题与合同事实有关而条款上下文不足，请明确说明缺少的信息。
+                只有在制度依据上下文确实提供内容时，才可用于解释、校验或提示；若制度依据上下文为暂无相关材料，不要做制度合规判断。
+                不要把制度要求误写成合同已约定内容。
                 回答简洁、分点列出关键结论。
                 """;
     }
@@ -58,6 +60,48 @@ public final class ContractPrompts {
                 """.formatted(
                 contractSummary,
                 blankAsPlaceholder(clauseRagContext),
+                blankAsPlaceholder(policyRagContext),
+                question
+        );
+    }
+
+    /**
+     * 政策/制度问答系统提示：仅依据制度依据上下文回答。
+     *
+     * @return system 消息正文
+     */
+    public static String policyQaSystem() {
+        return """
+                你是企业内部政策制度问答助手。请仅依据提供的「制度依据上下文」回答用户问题。
+                回答时应明确说明结论、适用条件、需要留存的证据或审批动作；如材料不足，请直接说明缺少依据。
+                不要编造未在制度依据中出现的政策编号、金额比例、审批角色或证据要求。
+                """;
+    }
+
+    /**
+     * 政策/制度问答用户消息：嵌入可选合同类型、制度依据上下文与具体问题。
+     *
+     * @param contractTypeScope 合同类型范围描述
+     * @param policyRagContext  制度通道命中文本
+     * @param question          用户问题
+     * @return user 消息正文
+     */
+    public static String policyQaUser(
+            String contractTypeScope,
+            String policyRagContext,
+            String question
+    ) {
+        return """
+                【合同类型范围】
+                %s
+
+                【制度依据上下文】
+                %s
+
+                【用户问题】
+                %s
+                """.formatted(
+                contractTypeScope == null || contractTypeScope.isBlank() ? "不限" : contractTypeScope,
                 blankAsPlaceholder(policyRagContext),
                 question
         );

@@ -4,6 +4,8 @@ import type {
   ApprovalAssistResponse,
   ApprovalRecordsImportRequest,
   ApprovalRecordsImportResponse,
+  ContractClauseChunk,
+  ContractFileParseResponse,
   ContractImportRequest,
   ContractImportResponse,
   ContractQaRequest,
@@ -43,6 +45,19 @@ export async function importContract(
   return data
 }
 
+/** 2.1a 解析合同文件为导入草稿（POST /api/contracts/parse-file） */
+export async function parseContractFile(
+  file: File,
+): Promise<ContractFileParseResponse> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await http.post<ContractFileParseResponse>(
+    '/contracts/parse-file',
+    form,
+  )
+  return data
+}
+
 /** 2.2 全量导入审批记录（POST /api/contracts/{id}/approval-records/import） */
 export async function importApprovalRecords(
   contractId: string,
@@ -73,6 +88,17 @@ export async function checkContractRisk(
 ): Promise<ContractRiskCheckResponse> {
   const { data } = await http.post<ContractRiskCheckResponse>(
     `/contracts/${encodeURIComponent(contractId)}/risk-check`,
+  )
+  return data
+}
+
+/** 2.4a 查询合同条款块详情（GET /api/contracts/{id}/chunks/{chunkId}） */
+export async function getContractChunk(
+  contractId: string,
+  chunkId: string,
+): Promise<ContractClauseChunk> {
+  const { data } = await http.get<ContractClauseChunk>(
+    `/contracts/${encodeURIComponent(contractId)}/chunks/${encodeURIComponent(chunkId)}`,
   )
   return data
 }

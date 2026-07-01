@@ -1,56 +1,94 @@
 <script setup lang="ts">
 /**
  * 页面：合同问答（/contracts/:id/qa）
- *
- * 对应后端接口：
- * - POST /api/contracts/{id}/qa
- *
- * 页面目标（最小可用）：
- * - 输入 contractId + question，点击按钮发请求
- * - 展示 answer 与 retrievedChunkIds
- *
- * contractId 的来源：
- * - 默认取 Pinia store 的 currentContractId（通常来自“合同导入页”的成功返回）
- * - 这里用 ref(store.currentContractId) 作为初始值：页面创建时读取一次即可
- *   （每次切换页面会重新创建组件实例，所以通常能拿到最新的 store 值）
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import AgentTraceEvidencePanel from '../components/AgentTraceEvidencePanel.vue'
 import { useContractContextStore } from '../stores/contractContext'
 import { askContract } from '../api/contracts'
-import { prettyJson } from '../utils/json'
 import type { NormalizedHttpError } from '../api/http'
-import type { ContractQaResponse } from '../types/contracts'
+import type { AgentTrace, ContractQaResponse } from '../types/contracts'
 
 const store = useContractContextStore()
 
 const contractId = ref(store.currentContractId)
 const question = ref('这个合同付款条件是什么？')
+const includePolicyEvidence = ref(false)
 const loading = ref(false)
 const result = ref<ContractQaResponse | null>(null)
+const resultContractId = ref('')
+const resultIncludePolicyEvidence = ref(false)
 const errorMsg = ref<string>('')
+
+const traceSubtitle = computed(() => {
+  if (!result.value) {
+    return includePolicyEvidence.value ? '回答引用的条款与制度' : '回答引用的合同条款'
+  }
+  return resultIncludePolicyEvidence.value ? '回答引用的条款与制度' : '回答引用的合同条款'
+})
+
+const evidenceTraces = computed<AgentTrace[]>(() => {
+  if (!result.value) {
+    return []
+  }
+  const traces = result.value.agentTrace ?? []
+  if (traces.some((trace) => hasEvidence(trace))) {
+    return traces
+  }
+  const fallback: AgentTrace[] = []
+  const chunkIds = normalizeIds(result.value.retrievedChunkIds)
+  const policyIds = normalizeIds(result.value.retrievedPolicyIds)
+  if (chunkIds.length) {
+    fallback.push({
+      agentName: 'ContractFactAgent',
+      summary: `已按问题检索合同条款，命中 ${chunkIds.length} 个合同条款片段。`,
+      retrievedChunkIds: chunkIds,
+      retrievedPolicyIds: [],
+    })
+  }
+  if (policyIds.length) {
+    fallback.push({
+      agentName: 'PolicyEvidenceAgent',
+      summary: `已按问题检索制度依据，命中 ${policyIds.length} 条制度依据。`,
+      retrievedChunkIds: [],
+      retrievedPolicyIds: policyIds,
+    })
+  }
+  return fallback
+})
 
 async function submit() {
   errorMsg.value = ''
   result.value = null
-  // 1) 最小必填校验：避免 400（后端也会校验，但前端先挡一次体验更好）
+  resultContractId.value = ''
+  resultIncludePolicyEvidence.value = false
   if (!contractId.value.trim() || !question.value.trim()) {
     errorMsg.value = 'contractId 和 question 都必填。'
     return
   }
   loading.value = true
   try {
-    // 2) 调用 API 封装：contracts.ts -> http.ts -> /api 代理 -> 后端
-    result.value = await askContract(contractId.value.trim(), {
+    const submittedContractId = contractId.value.trim()
+    result.value = await askContract(submittedContractId, {
       question: question.value,
+      includePolicyEvidence: includePolicyEvidence.value,
     })
-    // 3) 成功后把 contractId 写回 store，保持全局上下文一致
-    store.setCurrentContractId(contractId.value.trim())
+    resultContractId.value = submittedContractId
+    resultIncludePolicyEvidence.value = includePolicyEvidence.value
+    store.setCurrentContractId(submittedContractId)
   } catch (e) {
-    // 失败：这里展示统一错误文案（来自 http.ts 的归一化）
     errorMsg.value = (e as NormalizedHttpError).message
   } finally {
     loading.value = false
   }
+}
+
+function hasEvidence(trace: AgentTrace) {
+  return Boolean(trace.retrievedChunkIds?.length || trace.retrievedPolicyIds?.length)
+}
+
+function normalizeIds(ids?: string[]) {
+  return (ids ?? []).map((id) => id.trim()).filter(Boolean)
 }
 </script>
 
@@ -60,31 +98,41 @@ async function submit() {
       <h1>合同问答 <span class="endpoint">POST /api/contracts/{id}/qa</span></h1>
     </div>
 
-    <div class="card">
-      <div class="field">
-        <label class="field-label">合同 id</label>
-        <input v-model="contractId" type="text" class="inp" />
-      </div>
-      <div class="field">
-        <label class="field-label">问题</label>
-        <textarea v-model="question" rows="3" class="inp ta"></textarea>
-      </div>
-      <button :disabled="loading" @click="submit" class="btn">
-        {{ loading ? '询问中…' : '发送问题' }}
-      </button>
-    </div>
+    <div class="layout">
+      <main class="main-col">
+        <div class="card">
+          <div class="field">
+            <label class="field-label">合同 id</label>
+            <input v-model="contractId" type="text" class="inp" />
+          </div>
+          <div class="field">
+            <label class="field-label">问题</label>
+            <textarea v-model="question" rows="3" class="inp ta"></textarea>
+          </div>
+          <label class="option-row">
+            <input v-model="includePolicyEvidence" type="checkbox" />
+            <span>同时引用制度依据</span>
+          </label>
+          <button :disabled="loading" @click="submit" class="btn">
+            {{ loading ? '询问中...' : '发送问题' }}
+          </button>
+        </div>
 
-    <div v-if="errorMsg" class="msg msg--error">{{ errorMsg }}</div>
+        <div v-if="errorMsg" class="msg msg--error">{{ errorMsg }}</div>
 
-    <div v-if="result" class="msg msg--success">
-      <div class="result-item">
-        <span class="result-label">answer</span>
-        <p class="result-text">{{ result.answer }}</p>
-      </div>
-      <div class="result-item">
-        <span class="result-label">retrievedChunkIds</span>
-        <code class="result-code">{{ prettyJson(result.retrievedChunkIds) }}</code>
-      </div>
+        <div v-if="result" class="msg msg--success">
+          <div class="result-item">
+            <span class="result-label">answer</span>
+            <p class="result-text">{{ result.answer }}</p>
+          </div>
+        </div>
+      </main>
+
+      <AgentTraceEvidencePanel
+        :contract-id="resultContractId || contractId"
+        :traces="evidenceTraces"
+        :subtitle="traceSubtitle"
+      />
     </div>
   </section>
 </template>
@@ -92,7 +140,7 @@ async function submit() {
 <style scoped>
 .page {
   padding: 20px;
-  max-width: 720px;
+  max-width: 1480px;
 }
 .page-header {
   margin-bottom: 12px;
@@ -109,6 +157,15 @@ async function submit() {
   color: #999;
   font-family: ui-monospace, Consolas, monospace;
   margin-left: 12px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(440px, 560px);
+  gap: 16px;
+  align-items: start;
+}
+.main-col {
+  min-width: 0;
 }
 .card {
   background: #fff;
@@ -143,6 +200,20 @@ async function submit() {
 }
 .ta {
   resize: vertical;
+}
+.option-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 10px;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+}
+.option-row input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
 }
 .btn {
   padding: 6px 16px;
@@ -198,11 +269,12 @@ async function submit() {
   color: #333;
   line-height: 1.6;
 }
-.result-code {
-  font-size: 12px;
-  color: #555;
-  background: #f0f0f0;
-  padding: 2px 6px;
-  display: inline-block;
+@media (max-width: 960px) {
+  .page {
+    max-width: none;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

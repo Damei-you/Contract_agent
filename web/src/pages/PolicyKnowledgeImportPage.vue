@@ -15,7 +15,7 @@
  * 4) 失败：展示统一错误 message，并可附带后端返回的 error body（err.data）
  */
 import { ref } from 'vue'
-import { importPolicyKnowledge } from '../api/policies'
+import { importPolicyKnowledge, parsePolicyKnowledgeFile } from '../api/policies'
 import { prettyJson } from '../utils/json'
 import type { NormalizedHttpError } from '../api/http'
 
@@ -51,9 +51,42 @@ const defaultPayload = {
 }
 
 const payloadText = ref(prettyJson(defaultPayload))
+const selectedFile = ref<File | null>(null)
 const loading = ref(false)
+const parseLoading = ref(false)
 const result = ref<string>('')
 const errorMsg = ref<string>('')
+const parseMsg = ref<string>('')
+
+function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  selectedFile.value = input.files?.[0] ?? null
+  parseMsg.value = ''
+}
+
+async function parseSelectedFile() {
+  errorMsg.value = ''
+  result.value = ''
+  parseMsg.value = ''
+  if (!selectedFile.value) {
+    errorMsg.value = '请选择要解析的制度文件。'
+    return
+  }
+  parseLoading.value = true
+  try {
+    const resp = await parsePolicyKnowledgeFile(selectedFile.value)
+    payloadText.value = prettyJson(resp.draft)
+    const warnings = resp.document.warnings.length
+      ? `\n${resp.document.warnings.join('\n')}`
+      : ''
+    parseMsg.value = `已解析 ${resp.document.filename || selectedFile.value.name}，生成 ${resp.policyCount} 个制度条目。${warnings}`
+  } catch (e) {
+    const err = e as NormalizedHttpError
+    errorMsg.value = `${err.message}${err.data ? '\n' + prettyJson(err.data) : ''}`
+  } finally {
+    parseLoading.value = false
+  }
+}
 
 async function submit() {
   errorMsg.value = ''
@@ -85,6 +118,24 @@ async function submit() {
   <section class="page">
     <div class="page-header">
       <h1>政策制度导入 <span class="endpoint">POST /api/policies/import</span></h1>
+    </div>
+
+    <div class="card file-card">
+      <label class="field-label">制度文件</label>
+      <div class="file-row">
+        <input
+          type="file"
+          class="file-input"
+          accept=".pdf,.doc,.docx,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+          @change="onFileChange"
+        />
+        <button :disabled="parseLoading || !selectedFile" @click="parseSelectedFile" class="btn btn--secondary">
+          {{ parseLoading ? '解析中…' : '解析为 JSON' }}
+        </button>
+      </div>
+      <div v-if="parseMsg" class="file-msg">
+        <pre>{{ parseMsg }}</pre>
+      </div>
     </div>
 
     <div class="card">
@@ -135,6 +186,9 @@ async function submit() {
   border: 1px solid #e5e5e5;
   padding: 12px;
 }
+.file-card {
+  margin-bottom: 8px;
+}
 .field-label {
   display: block;
   font-size: 12px;
@@ -162,6 +216,17 @@ async function submit() {
 .actions {
   margin-top: 8px;
 }
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.file-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: #333;
+}
 .btn {
   padding: 6px 16px;
   background: #000;
@@ -181,6 +246,18 @@ async function submit() {
   cursor: not-allowed;
   background: #000;
   color: #fff;
+}
+.btn--secondary {
+  background: #fff;
+  color: #000;
+}
+.btn--secondary:hover {
+  background: #000;
+  color: #fff;
+}
+.btn--secondary:disabled {
+  background: #fff;
+  color: #000;
 }
 .msg {
   margin-top: 8px;
@@ -207,6 +284,19 @@ async function submit() {
   word-break: break-word;
   margin: 0;
   font-size: 13px;
+  color: #333;
+}
+.file-msg {
+  margin-top: 8px;
+  border-left: 3px solid #000;
+  background: #fafafa;
+  padding: 8px 10px;
+}
+.file-msg pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  font-size: 12px;
   color: #333;
 }
 </style>

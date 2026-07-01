@@ -26,7 +26,6 @@ import { friendlyHttpMessage } from '../utils/errors'
 export const http = axios.create({
   baseURL: '/api',
   timeout: 30_000,
-  headers: { 'Content-Type': 'application/json' },
 })
 
 /**

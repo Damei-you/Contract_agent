@@ -35,15 +35,7 @@ public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
             return List.of();
         }
         int k = Math.max(1, topK);
-        String normalizedQuery = (query == null || query.isBlank()) ? "合同合规 制度依据" : query.trim();
-
-        SearchRequest request = SearchRequest.builder()
-                .query(normalizedQuery)
-                .topK(k * CANDIDATE_OVERSAMPLE)
-                .filterExpression("docType == 'policy'")
-                .build();
-
-        List<Document> documents = vectorStore.similaritySearch(request);
+        List<Document> documents = searchPolicyDocuments(query, k * CANDIDATE_OVERSAMPLE);
         if (documents == null || documents.isEmpty()) {
             return List.of();
         }
@@ -53,6 +45,29 @@ public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
                 .limit(k)
                 .map(PgVectorPolicyRagRetriever::toPolicyRagDocument)
                 .toList();
+    }
+
+    @Override
+    public List<PolicyRagDocument> retrieve(String query, int topK) {
+        int k = Math.max(1, topK);
+        List<Document> documents = searchPolicyDocuments(query, k);
+        if (documents == null || documents.isEmpty()) {
+            return List.of();
+        }
+        return documents.stream()
+                .limit(k)
+                .map(PgVectorPolicyRagRetriever::toPolicyRagDocument)
+                .toList();
+    }
+
+    private List<Document> searchPolicyDocuments(String query, int topK) {
+        String normalizedQuery = (query == null || query.isBlank()) ? "制度依据 合规要求" : query.trim();
+        SearchRequest request = SearchRequest.builder()
+                .query(normalizedQuery)
+                .topK(Math.max(1, topK))
+                .filterExpression("docType == 'policy'")
+                .build();
+        return vectorStore.similaritySearch(request);
     }
 
     private static boolean appliesToContractType(Document document, String contractTypeName) {

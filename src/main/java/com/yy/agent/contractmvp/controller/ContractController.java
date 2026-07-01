@@ -2,6 +2,7 @@ package com.yy.agent.contractmvp.controller;
 
 import com.yy.agent.contractmvp.api.dto.ApprovalAssistRequest;
 import com.yy.agent.contractmvp.api.dto.ApprovalAssistResponse;
+import com.yy.agent.contractmvp.api.dto.ContractClauseChunkResponse;
 import com.yy.agent.contractmvp.api.dto.ContractQaRequest;
 import com.yy.agent.contractmvp.api.dto.ContractQaResponse;
 import com.yy.agent.contractmvp.api.dto.ContractRiskCheckResponse;
@@ -9,13 +10,19 @@ import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordsRequest;
 import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordsResponse;
 import com.yy.agent.contractmvp.api.dto.ImportContractRequest;
 import com.yy.agent.contractmvp.api.dto.ImportContractResponse;
+import com.yy.agent.contractmvp.api.dto.ParseContractFileResponse;
 import com.yy.agent.contractmvp.service.ContractApplicationService;
+import com.yy.agent.contractmvp.service.DocumentParseApplicationService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 合同 Agent 演示 API：将 HTTP 请求委托给 {@link ContractApplicationService}，自身不做业务规则。
@@ -27,12 +34,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class ContractController {
 
     private final ContractApplicationService contractApplicationService;
+    private final DocumentParseApplicationService documentParseApplicationService;
 
     /**
      * @param contractApplicationService 应用服务（编排仓储与 AI）
      */
-    public ContractController(ContractApplicationService contractApplicationService) {
+    public ContractController(
+            ContractApplicationService contractApplicationService,
+            DocumentParseApplicationService documentParseApplicationService
+    ) {
         this.contractApplicationService = contractApplicationService;
+        this.documentParseApplicationService = documentParseApplicationService;
     }
 
     /**
@@ -59,6 +71,21 @@ public class ContractController {
     }
 
     /**
+     * 查询指定合同条款块详情，供风险检查/审批辅助的 AgentTrace 溯源面板使用。
+     *
+     * @param id      合同 id
+     * @param chunkId 条款块 id
+     * @return 条款块详情
+     */
+    @GetMapping("/{id}/chunks/{chunkId}")
+    public ContractClauseChunkResponse getChunk(
+            @PathVariable("id") String id,
+            @PathVariable("chunkId") String chunkId
+    ) {
+        return contractApplicationService.getChunk(id, chunkId);
+    }
+
+    /**
      * 按当前审批人角色与关注重点，生成审批建议与核对清单（JSON 解析为 DTO）。
      *
      * @param id      合同 id
@@ -74,14 +101,25 @@ public class ContractController {
     }
 
     /**
-     * 导入新合同及条款块；若请求未带 id 则服务端生成。id 已存在时返回 409。
+     * 导入合同及条款块；若请求未带 id 则服务端生成。id 已存在时先返回覆盖确认提示。
      *
-     * @param request 合同主数据与可选条款列表
-     * @return 落库后的合同 id
+     * @param request 合同主数据、覆盖确认标记与可选条款列表
+     * @return 导入结果或覆盖确认提示
      */
     @PostMapping("/import")
     public ImportContractResponse importContract(@Valid @RequestBody ImportContractRequest request) {
         return contractApplicationService.importContract(request);
+    }
+
+    /**
+     * 上传合同文件并解析为可编辑导入草稿；不直接落库，草稿确认后复用 {@code POST /api/contracts/import}。
+     *
+     * @param file PDF、Word 或文本文件
+     * @return 合同导入草稿与解析元数据
+     */
+    @PostMapping(value = "/parse-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ParseContractFileResponse parseContractFile(@RequestPart("file") MultipartFile file) {
+        return documentParseApplicationService.parseContractFile(file);
     }
 
     /**

@@ -3,6 +3,7 @@ package com.yy.agent.contractmvp.service;
 import com.yy.agent.contractmvp.ai.rag.PolicyVectorIngestionService;
 import com.yy.agent.contractmvp.api.dto.ImportPolicyKnowledgeRequest;
 import com.yy.agent.contractmvp.api.dto.ImportPolicyKnowledgeResponse;
+import com.yy.agent.contractmvp.api.dto.PolicyKnowledgeDetailResponse;
 import com.yy.agent.contractmvp.api.dto.PolicyKnowledgeItemDto;
 import com.yy.agent.contractmvp.domain.ContractType;
 import com.yy.agent.contractmvp.domain.PolicyKnowledgeItem;
@@ -69,6 +70,28 @@ public class PolicyKnowledgeApplicationService {
         List<String> policyIds = persisted.stream().map(PolicyKnowledgeItem::policyId).toList();
         String warning = ingestVectorsSafely(persisted);
         return new ImportPolicyKnowledgeResponse(persisted.size(), policyIds, warning);
+    }
+
+    /**
+     * 查询制度依据详情，用于前端从 AgentTrace 命中 policyId 继续查看制度条文。
+     *
+     * @param policyId 制度条目主键
+     * @return 制度依据详情
+     */
+    public PolicyKnowledgeDetailResponse getPolicy(String policyId) {
+        PolicyKnowledgeRepository repository = policyKnowledgeRepository.getIfAvailable();
+        if (repository == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Policy knowledge repository is not available; ensure PostgreSQL and MyBatis mappers are configured."
+            );
+        }
+        PolicyKnowledgeItem item = repository.findById(policyId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Policy knowledge item not found: " + policyId
+                ));
+        return PolicyKnowledgeDetailResponse.from(item);
     }
 
     /**

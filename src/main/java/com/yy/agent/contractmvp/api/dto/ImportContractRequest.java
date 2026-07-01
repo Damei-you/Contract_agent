@@ -32,6 +32,7 @@ import java.util.List;
  * @param vectorDocId         向量文档 id，可空则领域对象内默认
  * @param notes               备注
  * @param chunks              条款块列表，可空
+ * @param overwriteConfirmed  同 id 已存在时，是否确认覆盖导入
  */
 public record ImportContractRequest(
         String id,
@@ -51,11 +52,12 @@ public record ImportContractRequest(
         @NotBlank String riskTier,
         String vectorDocId,
         String notes,
-        @Valid List<ImportChunkDto> chunks
+        @Valid List<ImportChunkDto> chunks,
+        Boolean overwriteConfirmed
 ) {
 
     /**
-     * 紧凑构造：货币、可空字符串与 {@code chunks} 规范化。
+     * 紧凑构造：货币、可空字符串、{@code chunks} 与覆盖确认标记规范化。
      */
     public ImportContractRequest {
         if (currency == null || currency.isBlank()) {
@@ -74,5 +76,6 @@ public record ImportContractRequest(
             notes = "";
         }
         chunks = chunks == null ? List.of() : List.copyOf(chunks);
+        overwriteConfirmed = overwriteConfirmed != null && overwriteConfirmed;
     }
 }

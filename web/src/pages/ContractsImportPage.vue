@@ -20,10 +20,11 @@
  * 4) 失败：展示统一错误 message，并可附带后端返回的 error body（err.data）
  */
 import { ref } from 'vue'
-import { importContract } from '../api/contracts'
+import { importContract, parseContractFile } from '../api/contracts'
 import { useContractContextStore } from '../stores/contractContext'
 import { prettyJson } from '../utils/json'
 import type { NormalizedHttpError } from '../api/http'
+import type { ContractImportRequest } from '../types/contracts'
 
 const store = useContractContextStore()
 
@@ -64,9 +65,53 @@ const defaultPayload = {
 }
 
 const payloadText = ref(prettyJson(defaultPayload))
+const selectedFile = ref<File | null>(null)
 const loading = ref(false)
+const parseLoading = ref(false)
 const result = ref<string>('')
 const errorMsg = ref<string>('')
+const parseMsg = ref<string>('')
+const pendingOverwriteId = ref<string>('')
+const overwriteConfirmationMsg = ref<string>('')
+
+function clearOverwriteConfirmation() {
+  pendingOverwriteId.value = ''
+  overwriteConfirmationMsg.value = ''
+}
+
+function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  selectedFile.value = input.files?.[0] ?? null
+  parseMsg.value = ''
+  result.value = ''
+  errorMsg.value = ''
+  clearOverwriteConfirmation()
+}
+
+async function parseSelectedFile() {
+  errorMsg.value = ''
+  result.value = ''
+  parseMsg.value = ''
+  clearOverwriteConfirmation()
+  if (!selectedFile.value) {
+    errorMsg.value = '请选择要解析的合同文件。'
+    return
+  }
+  parseLoading.value = true
+  try {
+    const resp = await parseContractFile(selectedFile.value)
+    payloadText.value = prettyJson(resp.draft)
+    const warnings = resp.document.warnings.length
+      ? `\n${resp.document.warnings.join('\n')}`
+      : ''
+    parseMsg.value = `已解析 ${resp.document.filename || selectedFile.value.name}，生成 ${resp.chunkCount} 个条款块。${warnings}`
+  } catch (e) {
+    const err = e as NormalizedHttpError
+    errorMsg.value = `${err.message}${err.data ? '\n' + prettyJson(err.data) : ''}`
+  } finally {
+    parseLoading.value = false
+  }
+}
 
 async function submit() {
   errorMsg.value = ''
@@ -79,11 +124,31 @@ async function submit() {
     errorMsg.value = 'JSON 解析失败，请检查格式。'
     return
   }
+  if (body === null || Array.isArray(body) || typeof body !== 'object') {
+    errorMsg.value = '请求体必须是 JSON 对象。'
+    return
+  }
+  const payload = body as ContractImportRequest
+  const payloadId = typeof payload.id === 'string' ? payload.id.trim() : ''
+  const shouldConfirmOverwrite = Boolean(
+    pendingOverwriteId.value && payloadId === pendingOverwriteId.value,
+  )
+  if (!shouldConfirmOverwrite && pendingOverwriteId.value) {
+    clearOverwriteConfirmation()
+  }
+  payload.overwriteConfirmed = shouldConfirmOverwrite
   // 2) loading：最小防重复提交
   loading.value = true
   try {
     // 3) 调用 API 封装层（contracts.ts -> http.ts -> Vite proxy -> 后端）
-    const resp = await importContract(body as any)
+    const resp = await importContract(payload)
+    if (resp.requiresConfirmation) {
+      pendingOverwriteId.value = resp.contractId
+      overwriteConfirmationMsg.value = resp.message
+        || `合同 ID ${resp.contractId} 已存在，请确认是否覆盖导入。`
+      return
+    }
+    clearOverwriteConfirmation()
     result.value = prettyJson(resp)
     // 4) 把 contractId 写入全局上下文，供其他页面默认使用
     store.setCurrentContractId(resp.contractId)
@@ -103,13 +168,42 @@ async function submit() {
       <h1>合同导入 <span class="endpoint">POST /api/contracts/import</span></h1>
     </div>
 
+    <div class="card file-card">
+      <label class="field-label">合同文件</label>
+      <div class="file-row">
+        <input
+          type="file"
+          class="file-input"
+          accept=".pdf,.doc,.docx,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+          @change="onFileChange"
+        />
+        <button :disabled="parseLoading || !selectedFile" @click="parseSelectedFile" class="btn btn--secondary">
+          {{ parseLoading ? '解析中…' : '解析为 JSON' }}
+        </button>
+      </div>
+      <div v-if="parseMsg" class="file-msg">
+        <pre>{{ parseMsg }}</pre>
+      </div>
+    </div>
+
     <div class="card">
       <label class="field-label">请求体（JSON）</label>
-      <textarea v-model="payloadText" rows="18" class="ta" spellcheck="false"></textarea>
+      <textarea
+        v-model="payloadText"
+        rows="18"
+        class="ta"
+        spellcheck="false"
+        @input="clearOverwriteConfirmation"
+      ></textarea>
+
+      <div v-if="overwriteConfirmationMsg" class="msg msg--warning">
+        <strong>需要确认</strong>
+        <pre>{{ overwriteConfirmationMsg }}</pre>
+      </div>
 
       <div class="actions">
         <button :disabled="loading" @click="submit" class="btn">
-          {{ loading ? '提交中…' : '提交导入' }}
+          {{ loading ? '提交中…' : pendingOverwriteId ? '确认覆盖' : '提交导入' }}
         </button>
       </div>
     </div>
@@ -151,6 +245,9 @@ async function submit() {
   border: 1px solid #e5e5e5;
   padding: 12px;
 }
+.file-card {
+  margin-bottom: 8px;
+}
 .field-label {
   display: block;
   font-size: 12px;
@@ -178,6 +275,17 @@ async function submit() {
 .actions {
   margin-top: 8px;
 }
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.file-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: #333;
+}
 .btn {
   padding: 6px 16px;
   background: #000;
@@ -198,6 +306,18 @@ async function submit() {
   background: #000;
   color: #fff;
 }
+.btn--secondary {
+  background: #fff;
+  color: #000;
+}
+.btn--secondary:hover {
+  background: #000;
+  color: #fff;
+}
+.btn--secondary:disabled {
+  background: #fff;
+  color: #000;
+}
 .msg {
   margin-top: 8px;
   padding: 8px 12px;
@@ -208,6 +328,10 @@ async function submit() {
   color: #000;
 }
 .msg--success {
+  border-left: 3px solid #000;
+  color: #000;
+}
+.msg--warning {
   border-left: 3px solid #000;
   color: #000;
 }
@@ -223,6 +347,19 @@ async function submit() {
   word-break: break-word;
   margin: 0;
   font-size: 13px;
+  color: #333;
+}
+.file-msg {
+  margin-top: 8px;
+  border-left: 3px solid #000;
+  background: #fafafa;
+  padding: 8px 10px;
+}
+.file-msg pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  font-size: 12px;
   color: #333;
 }
 </style>

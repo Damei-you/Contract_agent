@@ -3,6 +3,7 @@ package com.yy.agent.contractmvp.service;
 import com.yy.agent.contractmvp.ai.rag.PolicyVectorIngestionService;
 import com.yy.agent.contractmvp.api.dto.ImportPolicyKnowledgeRequest;
 import com.yy.agent.contractmvp.api.dto.ImportPolicyKnowledgeResponse;
+import com.yy.agent.contractmvp.api.dto.PolicyKnowledgeDetailResponse;
 import com.yy.agent.contractmvp.api.dto.PolicyKnowledgeItemDto;
 import com.yy.agent.contractmvp.domain.ContractType;
 import com.yy.agent.contractmvp.domain.PolicyKnowledgeItem;
@@ -112,6 +113,22 @@ class PolicyKnowledgeApplicationServiceTest {
         assertThatThrownBy(() -> service.importPolicies(request))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+    }
+
+    @Test
+    void shouldReturnPolicyDetail() {
+        InMemoryPolicyKnowledgeRepository repository = new InMemoryPolicyKnowledgeRepository();
+        PolicyKnowledgeApplicationService service = service(repository);
+        service.importPolicies(new ImportPolicyKnowledgeRequest(List.of(
+                dto("POL-DETAIL-001", "税务合规", "服务合同", "HIGH", "制度正文")
+        )));
+
+        PolicyKnowledgeDetailResponse response = service.getPolicy("POL-DETAIL-001");
+
+        assertThat(response.policyId()).isEqualTo("POL-DETAIL-001");
+        assertThat(response.policyDomain()).isEqualTo("税务合规");
+        assertThat(response.policyTextForEmbedding()).isEqualTo("制度正文");
+        assertThat(response.requiredEvidence()).contains("evidence-a");
     }
 
     private static PolicyKnowledgeApplicationService service(PolicyKnowledgeRepository repository) {

@@ -34,6 +34,7 @@ const store = useContractContextStore()
 const navItems = computed(() => [
   { label: '合同导入', to: { name: 'contracts-import' } },
   { label: '政策制度导入', to: { name: 'policies-import' } },
+  { label: '政策制度问答', to: { name: 'policies-qa' } },
   {
     label: '合同问答',
     to: { name: 'contract-qa', params: { id: store.currentContractId } },

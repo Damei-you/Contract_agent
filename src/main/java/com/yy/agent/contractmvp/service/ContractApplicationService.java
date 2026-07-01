@@ -6,6 +6,7 @@ import com.yy.agent.contractmvp.api.dto.ApprovalAssistRequest;
 import com.yy.agent.contractmvp.api.dto.ApprovalAssistResponse;
 import com.yy.agent.contractmvp.api.dto.ContractQaRequest;
 import com.yy.agent.contractmvp.api.dto.ContractQaResponse;
+import com.yy.agent.contractmvp.api.dto.ContractClauseChunkResponse;
 import com.yy.agent.contractmvp.api.dto.ContractRiskCheckResponse;
 import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordDto;
 import com.yy.agent.contractmvp.api.dto.ImportApprovalRecordsRequest;
@@ -68,7 +69,7 @@ public class ContractApplicationService {
      */
     public ContractQaResponse qa(String contractId, ContractQaRequest request) {
         ensureContractExists(contractId);
-        return aiContractAssistant.answerQuestion(contractId, request.question());
+        return aiContractAssistant.answerQuestion(contractId, request.question(), request.includePolicyEvidence());
     }
 
     /**
@@ -80,6 +81,22 @@ public class ContractApplicationService {
     public ContractRiskCheckResponse riskCheck(String contractId) {
         ensureContractExists(contractId);
         return aiContractAssistant.riskCheck(contractId);
+    }
+
+    /**
+     * 查询合同条款块详情，用于前端从 AgentTrace 命中 id 继续查看条款正文。
+     *
+     * @param contractId 合同 id
+     * @param chunkId    条款块 id
+     * @return 条款块详情
+     */
+    public ContractClauseChunkResponse getChunk(String contractId, String chunkId) {
+        ClauseChunk chunk = contractRepository.findChunk(contractId, chunkId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Contract chunk not found: " + contractId + "/" + chunkId
+                ));
+        return ContractClauseChunkResponse.from(chunk);
     }
 
     /**
@@ -95,18 +112,19 @@ public class ContractApplicationService {
     }
 
     /**
-     * 导入合同：生成或使用请求中的 id，写入主表、替换条款列表、清空审批列表（新合同无历史）。
-     * id 冲突时抛出409。
+     * 导入合同：生成或使用请求中的 id，写入主表、替换条款列表、清空审批列表。
+     * id 已存在且未确认覆盖时不写库，返回确认提示；确认后执行幂等覆盖。
      *
      * @param request 主数据与条款 DTO
-     * @return 新建合同 id
+     * @return 导入结果或覆盖确认提示
      */
     public ImportContractResponse importContract(ImportContractRequest request) {
         String id = (request.id() == null || request.id().isBlank())
                 ? "CTR-" + UUID.randomUUID()
                 : request.id().trim();
-        if (contractRepository.findById(id).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Contract already exists: " + id);
+        boolean exists = contractRepository.findById(id).isPresent();
+        if (exists && !Boolean.TRUE.equals(request.overwriteConfirmed())) {
+            return ImportContractResponse.requiresOverwriteConfirmation(id);
         }
         ContractType type = ContractType.fromFlexible(request.type());
         RiskSeverity tier = parseRiskTier(request.riskTier());
@@ -132,7 +150,7 @@ public class ContractApplicationService {
         List<ClauseChunk> chunks = mapChunks(id, request.chunks());
         contractRepository.saveContractWithChunks(contract, chunks);
         contractVectorIngestionService.ifAvailable(s -> s.ingest(chunks));
-        return new ImportContractResponse(id);
+        return ImportContractResponse.imported(id, exists);
     }
 
     /**
