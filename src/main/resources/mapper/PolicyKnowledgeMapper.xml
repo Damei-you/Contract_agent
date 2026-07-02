@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.yy.agent.contractmvp.mapper.PolicyKnowledgeMapper">
+<mapper namespace="com.yy.agent.contract.mapper.PolicyKnowledgeMapper">
 
-    <resultMap id="PolicyKnowledgeItemResultMap" type="com.yy.agent.contractmvp.domain.PolicyKnowledgeItem">
+    <resultMap id="PolicyKnowledgeItemResultMap" type="com.yy.agent.contract.domain.PolicyKnowledgeItem">
         <constructor>
             <idArg column="policy_id" javaType="java.lang.String"/>
             <arg column="policy_domain" javaType="java.lang.String"/>
             <arg column="applies_to_contract_type" javaType="java.lang.String"/>
-            <arg column="severity" javaType="com.yy.agent.contractmvp.domain.RiskSeverity"/>
+            <arg column="severity" javaType="com.yy.agent.contract.domain.RiskSeverity"/>
             <arg column="trigger_keywords" javaType="java.lang.String"/>
             <arg column="control_objective" javaType="java.lang.String"/>
             <arg column="policy_text_for_embedding" javaType="java.lang.String"/>

@@ -87,7 +87,7 @@ Base URL：`http://localhost:8088`
 
 ### 3.2 页面：合同导入 `/contracts/import`
 
-- **当前实现（MVP 最小可用）**：
+- **当前实现（最小可用）**：
   - 使用 JSON 文本域（`<textarea>`）作为唯一的输入方式，提供一份预填的默认请求体
   - 用户可直接编辑 JSON 文本域内容，或粘贴自定义 JSON
   - 点击"提交导入"按钮触发 `POST /api/contracts/import`
@@ -190,7 +190,7 @@ Base URL：`http://localhost:8088`
 ### 5.1 目录结构示例
 
 ```
-contract-agent-mvp/
+contract-agent/
   docs/
   src/                      # 后端
   web/                      # 前端（Vue 3 + TypeScript）

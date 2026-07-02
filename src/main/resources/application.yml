@@ -1,6 +1,6 @@
 spring:
   application:
-    name: contract-agent-mvp
+    name: contract-agent
 
   servlet:
     multipart:

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.yy.agent.contractmvp.mapper.ContractMapper">
+<mapper namespace="com.yy.agent.contract.mapper.ContractMapper">
 
-    <resultMap id="ContractResultMap" type="com.yy.agent.contractmvp.domain.Contract">
+    <resultMap id="ContractResultMap" type="com.yy.agent.contract.domain.Contract">
         <constructor>
             <idArg column="id" javaType="java.lang.String"/>
-            <arg column="contract_type" javaType="com.yy.agent.contractmvp.domain.ContractType"/>
+            <arg column="contract_type" javaType="com.yy.agent.contract.domain.ContractType"/>
             <arg column="party_a_name" javaType="java.lang.String"/>
             <arg column="party_b_name" javaType="java.lang.String"/>
             <arg column="currency" javaType="java.lang.String"/>
@@ -18,7 +18,7 @@
             <arg column="performance_site" javaType="java.lang.String"/>
             <arg column="payment_terms_summary" javaType="java.lang.String"/>
             <arg column="business_owner_dept" javaType="java.lang.String"/>
-            <arg column="risk_tier" javaType="com.yy.agent.contractmvp.domain.RiskSeverity"/>
+            <arg column="risk_tier" javaType="com.yy.agent.contract.domain.RiskSeverity"/>
             <arg column="vector_doc_id" javaType="java.lang.String"/>
             <arg column="notes" javaType="java.lang.String"/>
         </constructor>

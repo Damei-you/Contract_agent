@@ -1,4 +1,4 @@
-# Contract Agent MVP 架构总览
+# Contract Agent 架构总览
 
 本文档用于统一说明本项目的系统边界、核心流程和关键模块职责，作为后续维护与扩展的基线。
 
@@ -51,24 +51,24 @@
    - `metadata` 至少包含 `docType=policy/policyId/policyDomain/appliesToContractType/severity/triggerKeywords`
 5. 导入完成后，制度表与向量库都应可按 `policyId` 回查，便于模型输出可引用依据。
 
-### 2.3 双通道检索与问答流程
+### 2.3 合同问答检索流程
 
-1. 客户端调用 `POST /api/contracts/{id}/qa` 提交问题。
+1. 客户端调用 `POST /api/contracts/{id}/qa` 提交问题；`includePolicyEvidence` 缺省为 `false`。
 2. `ContractApplicationService#qa` 先校验合同存在（防止无效合同检索）。
-3. `AiContractAssistant#answerQuestion` 同时构建两个检索请求：
+3. `AiContractAssistant#answerQuestion` 总是构建合同通道检索请求：
    - 合同通道：`RagRetriever#retrieve(contractId, question, topK)`。
-   - 制度通道：`PolicyRagRetriever#retrieve(contractType, question, topK)`。
+   - 制度通道：仅当 `includePolicyEvidence=true` 时调用 `PolicyRagRetriever#retrieve(contractType, question, topK)`。
 4. 合同通道在 `vector_store` 中执行：
    - 按 `contractId` 过滤候选
    - 以 query embedding 做相似度排序
    - 返回 topK 命中并映射为 `RagDocument`
-5. 制度通道在 `vector_store` 中执行：
+5. 制度通道开启时，在 `vector_store` 中执行：
    - 按 `docType=policy` 过滤候选
    - 按 `appliesToContractType` 与当前合同类型收敛
    - 结合 query embedding、触发关键词、制度领域做相似度排序
    - 返回 topK 命中并映射为制度依据文档
-6. `AiContractAssistant` 将“合同条款上下文 + 制度依据上下文 + 合同摘要”拼装到 Prompt，请求聊天模型生成答案。
-7. 返回回答文本、命中条款 ID 列表与命中制度 ID 列表给客户端。
+6. `AiContractAssistant` 将“合同摘要 + 合同条款上下文 + 可选制度依据上下文”拼装到 Prompt，请求聊天模型生成答案。
+7. 返回回答文本、命中条款 ID 列表与命中制度 ID 列表给客户端；默认情况下 `retrievedPolicyIds` 为空。
 
 ### 2.4 风险检查与审批辅助的双通道约束
 

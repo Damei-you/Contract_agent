@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.yy.agent</groupId>
-	<artifactId>contract-agent-mvp</artifactId>
+	<artifactId>contract-agent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>contract-agent-mvp</name>
-	<description>Financial contract approval agent MVP</description>
+	<name>contract-agent</name>
+	<description>Financial contract approval agent</description>
 	<url/>
 	<licenses>
 		<license/>

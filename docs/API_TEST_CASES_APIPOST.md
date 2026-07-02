@@ -1,4 +1,4 @@
-# Contract Agent MVP 接口测试用例（ApiPost）
+# Contract Agent 接口测试用例（ApiPost）
 
 - Base URL：`http://localhost:8088`
 - 通用 Header：`Content-Type: application/json`

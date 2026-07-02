@@ -9,7 +9,7 @@ export const useContractContextStore = defineStore('contractContext', () => {
    * - 项目有 5 个页面，但除了“合同导入”之外，其余 4 个页面都依赖 `contractId`
    * - 通过 store 维护一个“当前合同 id”，可以让导入成功后自动带到问答/风险/审批辅助/审批记录导入页
    *
-   * 目前 store 只放最小必要状态（MVP 阶段）：
+   * 目前 store 只放最小必要状态（阶段）：
    * - currentContractId：当前/最近使用的合同 id
    *
    * 后续可能扩展（按 docs/FRONTEND_DEV_GUIDE.md 的全局功能建议）：

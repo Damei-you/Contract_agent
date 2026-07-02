@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.yy.agent.contractmvp.mapper.ApprovalRecordMapper">
+<mapper namespace="com.yy.agent.contract.mapper.ApprovalRecordMapper">
 
-    <resultMap id="ApprovalRecordRowResultMap" type="com.yy.agent.contractmvp.mapper.model.ApprovalRecordRow">
+    <resultMap id="ApprovalRecordRowResultMap" type="com.yy.agent.contract.mapper.model.ApprovalRecordRow">
         <constructor>
             <arg column="contract_id" javaType="java.lang.String"/>
             <idArg column="approval_record_id" javaType="java.lang.String"/>
             <arg column="step_no" javaType="int"/>
             <arg column="approver_role" javaType="java.lang.String"/>
-            <arg column="decision" javaType="com.yy.agent.contractmvp.domain.ApprovalDecision"/>
+            <arg column="decision" javaType="com.yy.agent.contract.domain.ApprovalDecision"/>
             <arg column="decision_time" javaType="java.time.OffsetDateTime" jdbcType="TIMESTAMP_WITH_TIMEZONE"/>
             <arg column="comment_summary" javaType="java.lang.String"/>
             <arg column="linked_policy_ids_json" javaType="java.lang.String"/>

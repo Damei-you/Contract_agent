@@ -267,7 +267,7 @@ def write_pdf(path: Path):
         topMargin=inch,
         bottomMargin=inch,
         title=TITLE,
-        author="contract-agent-mvp",
+        author="contract-agent",
     )
     doc.build(story)
 

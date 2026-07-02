@@ -9,7 +9,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
  *
  * 这里的路由都使用懒加载（() => import(...)）：
  * - 好处：开发/生产下都可以按需加载页面代码，入口更轻
- * - 代价：首次进入某个页面会多一次模块加载，但对 MVP 阶段很合适
+ * - 代价：首次进入某个页面会多一次模块加载，但对 阶段很合适
  *
  * 路由 name 的用途：
  * - App.vue 的导航使用 `{ name: '...' }` 跳转，而不是硬编码 path 字符串
