@@ -10,7 +10,7 @@ spring:
   # PostgreSQL (pgvector); use compose.yaml in this module or:
   # docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres pgvector/pgvector:pg16
   datasource:
-    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:contract_agent}
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:contract-agent-test}
     username: ${PGUSER:postgres}
     password: ${PGPASSWORD:123456}
     driver-class-name: org.postgresql.Driver
@@ -52,6 +52,11 @@ spring:
 app:
   embedding:
     batch-size: ${EMBEDDING_BATCH_SIZE:10}
+  rag:
+    # Two-stage retrieval: first recall 20-40 vector candidates, then local rerank + MMR diversity.
+    clause-candidate-k: ${RAG_CLAUSE_CANDIDATE_K:32}
+    policy-candidate-k: ${RAG_POLICY_CANDIDATE_K:40}
+    max-candidate-k: ${RAG_MAX_CANDIDATE_K:40}
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml

@@ -1,0 +1,160 @@
+{
+  "contracts": [
+    {
+      "id": "CTR-EVAL-PROC-001",
+      "type": "procurement",
+      "partyAName": "甲方科技有限公司",
+      "partyBName": "乙方设备供应商有限公司",
+      "currency": "CNY",
+      "amountExTax": 800000,
+      "taxRatePct": 13,
+      "amountIncTax": 904000,
+      "signDate": "2026-03-01",
+      "effectiveDate": "2026-03-05",
+      "endDate": "2027-03-04",
+      "performanceSite": "甲方指定交付地点",
+      "paymentTermsSummary": "到货验收合格并收到合规增值税专用发票后30日内付款",
+      "businessOwnerDept": "采购部",
+      "riskTier": "HIGH",
+      "vectorDocId": "doc_eval_proc_001",
+      "notes": "RAG评测用采购合同，覆盖付款、税务、验收、责任和解除条款。",
+      "overwriteConfirmed": true,
+      "chunks": [
+        {
+          "id": "pc-subject-spec",
+          "clauseCode": "SUB",
+          "clauseTitle": "标的与规格",
+          "clauseCategory": "标的",
+          "textForEmbedding": "乙方向甲方供应服务器及配套设备，具体规格、数量、单价以双方确认的《采购清单》为准。任何超出采购清单范围的增项、替代型号或配置变更，均须经甲方书面确认后方可执行。"
+        },
+        {
+          "id": "pc-price-tax",
+          "clauseCode": "PRICE",
+          "clauseTitle": "价格、税率与发票",
+          "clauseCategory": "财务",
+          "textForEmbedding": "本合同不含税金额为800000元，适用增值税税率13%，含税总价904000元。乙方应向甲方开具合法有效的增值税专用发票，发票抬头、税号、开户行及账号应与甲方书面提供的开票信息一致；如国家税率政策调整，不含税价不变，税额按新政策据实调整。"
+        },
+        {
+          "id": "pc-pay-invoice-account",
+          "clauseCode": "PAY",
+          "clauseTitle": "付款条件与收款账户",
+          "clauseCategory": "财务",
+          "textForEmbedding": "甲方在同时收到乙方开具的合规增值税专用发票、双方签署的验收合格证明、完整交付物清单后30个自然日内，以银行转账方式向乙方合同载明的对公账户付款。乙方收款账户如需变更，应提前10个工作日提交加盖公章的账户变更函、开户证明和营业执照，未经甲方法务及财务确认，甲方有权暂停付款。"
+        },
+        {
+          "id": "pc-delivery-acceptance",
+          "clauseCode": "DEL",
+          "clauseTitle": "交付与验收",
+          "clauseCategory": "履约",
+          "textForEmbedding": "乙方应于2026年4月30日前完成全部设备交付并提供装箱单、合格证和安装调试记录。甲方应在收到交付物后10个工作日内完成验收并出具书面验收结论；如发现数量、规格或质量不符合约定，甲方可要求乙方限期整改、更换或重新交付。"
+        },
+        {
+          "id": "pc-warranty",
+          "clauseCode": "WAR",
+          "clauseTitle": "质保与缺陷处理",
+          "clauseCategory": "履约",
+          "textForEmbedding": "设备质保期为验收合格之日起12个月。质保期内因产品质量、安装调试或乙方原因导致故障的，乙方应在接到甲方通知后24小时内响应，并承担维修、更换、运输及重新调试费用。"
+        },
+        {
+          "id": "pc-liability-cap",
+          "clauseCode": "LIA",
+          "clauseTitle": "责任限制与例外",
+          "clauseCategory": "法务",
+          "textForEmbedding": "除故意或重大过失、保密义务违反、知识产权侵权、人身损害、行政处罚或依法不得限制责任的情形外，任一方对另一方的累计赔偿责任以本合同含税总价为上限。任何一方均不承担间接损失、利润损失、商誉损失等非直接损失。"
+        },
+        {
+          "id": "pc-termination",
+          "clauseCode": "TERM",
+          "clauseTitle": "解除与违约救济",
+          "clauseCategory": "法务",
+          "textForEmbedding": "任何一方重大违约且在收到守约方书面通知后15日内未完成补救的，守约方有权解除合同并要求违约方赔偿直接损失。乙方迟延交付超过15日，甲方有权解除合同、另行采购并要求乙方承担差价损失。"
+        },
+        {
+          "id": "pc-dispute",
+          "clauseCode": "DIS",
+          "clauseTitle": "法律适用与争议解决",
+          "clauseCategory": "合规",
+          "textForEmbedding": "本合同适用中华人民共和国法律。因本合同产生的争议，双方应先友好协商；协商不成的，提交甲方所在地有管辖权的人民法院诉讼解决。"
+        }
+      ]
+    },
+    {
+      "id": "CTR-EVAL-SVC-001",
+      "type": "service",
+      "partyAName": "甲方科技有限公司",
+      "partyBName": "乙方信息技术服务有限公司",
+      "currency": "CNY",
+      "amountExTax": 1200000,
+      "taxRatePct": 6,
+      "amountIncTax": 1272000,
+      "signDate": "2026-04-01",
+      "effectiveDate": "2026-04-05",
+      "endDate": "2027-04-04",
+      "performanceSite": "远程服务与甲方现场驻场结合",
+      "paymentTermsSummary": "按里程碑30%/40%/30%分期付款，付款前需验收、对账和合规发票",
+      "businessOwnerDept": "信息技术部",
+      "riskTier": "HIGH",
+      "vectorDocId": "doc_eval_svc_001",
+      "notes": "RAG评测用服务合同，覆盖SLA、里程碑付款、发票、数据安全、分包驻场和退出。",
+      "overwriteConfirmed": true,
+      "chunks": [
+        {
+          "id": "svc-scope-sla",
+          "clauseCode": "SLA",
+          "clauseTitle": "服务范围与SLA",
+          "clauseCategory": "履约",
+          "textForEmbedding": "乙方为甲方提供系统运维、故障响应和技术咨询服务，具体范围以附件《工作说明书（SOW）》为准。核心系统月度可用性不得低于99.5%，P1故障应在30分钟内响应、4小时内恢复；未达到SLA的，甲方有权要求服务积分、费用减免或整改计划。"
+        },
+        {
+          "id": "svc-pay-milestone",
+          "clauseCode": "PAY",
+          "clauseTitle": "里程碑付款",
+          "clauseCategory": "财务",
+          "textForEmbedding": "本合同按里程碑分三期付款：合同生效且乙方提交启动方案并经甲方确认后支付30%；中期服务报告、月度对账单和阶段验收通过后支付40%；服务期满、最终验收合格并完成资料移交后支付30%。每期付款均以甲方书面验收或对账确认作为前提。"
+        },
+        {
+          "id": "svc-invoice-tax",
+          "clauseCode": "TAX",
+          "clauseTitle": "服务发票与税务",
+          "clauseCategory": "财务",
+          "textForEmbedding": "乙方应按甲方确认的服务费金额开具合法有效的增值税专用发票，适用税率为6%。发票项目、税率、不含税金额、税额、价税合计以及开票信息应与合同和验收/对账资料一致；甲方收到不合规发票的，有权要求乙方重开且付款期限相应顺延。"
+        },
+        {
+          "id": "svc-acceptance",
+          "clauseCode": "ACC",
+          "clauseTitle": "服务验收与对账",
+          "clauseCategory": "履约",
+          "textForEmbedding": "乙方应每月提交服务报告、工单清单、故障处理记录和人员出勤记录。甲方业务负责人和信息安全负责人共同确认服务成果后形成验收或对账记录；未提交完整记录或记录无法核验的，甲方有权暂缓对应里程碑付款。"
+        },
+        {
+          "id": "svc-data-security",
+          "clauseCode": "SEC",
+          "clauseTitle": "数据安全与保密",
+          "clauseCategory": "合规",
+          "textForEmbedding": "乙方在服务过程中可能接触甲方业务数据、账号权限和商业秘密，应遵守甲方信息安全制度，采取最小权限、访问审批、操作日志留存、数据加密和人员保密承诺等措施。未经甲方书面授权，乙方不得复制、导出、披露或用于本合同以外目的；合同终止后应按甲方要求完成数据返还、导出验证和删除证明。"
+        },
+        {
+          "id": "svc-subcontract-onsite",
+          "clauseCode": "SUBP",
+          "clauseTitle": "分包与驻场人员",
+          "clauseCategory": "合规",
+          "textForEmbedding": "未经甲方书面同意，乙方不得将核心服务整体转包或分包。乙方驻场人员应通过甲方背景审查、入场培训和账号权限审批；人员变更须提前5个工作日通知甲方并取得同意。乙方对分包商、驻场人员和远程访问人员的行为向甲方承担连带责任。"
+        },
+        {
+          "id": "svc-liability-ip",
+          "clauseCode": "LIA",
+          "clauseTitle": "责任与知识产权",
+          "clauseCategory": "法务",
+          "textForEmbedding": "乙方应保证其服务、工具和交付物不侵犯第三方知识产权。因乙方原因导致甲方数据泄露、系统中断、监管处罚或第三方索赔的，乙方应承担赔偿责任；除保密、数据安全、知识产权侵权和故意重大过失外，双方累计赔偿责任以合同总金额为上限。"
+        },
+        {
+          "id": "svc-termination-data-return",
+          "clauseCode": "TERM",
+          "clauseTitle": "终止、退出与资料移交",
+          "clauseCategory": "履约",
+          "textForEmbedding": "合同终止或解除时，乙方应在10个工作日内完成账号注销、权限回收、资料移交、数据导出和删除证明，并配合甲方完成服务交接。乙方未按期完成退出交接的，甲方有权暂缓尾款并要求乙方继续提供必要支持。"
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import com.yy.agent.contract.domain.PolicyKnowledgeItem;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -20,13 +21,18 @@ import java.util.List;
 @Profile("!test")
 public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
 
-    /** 候选超采系数：制度通道在 docType 过滤后再做合同类型筛选，预先多取候选避免被过滤后不足 topK。 */
-    private static final int CANDIDATE_OVERSAMPLE = 5;
-
     private final VectorStore vectorStore;
+    private final int candidateK;
+    private final int maxCandidateK;
 
-    public PgVectorPolicyRagRetriever(VectorStore vectorStore) {
+    public PgVectorPolicyRagRetriever(
+            VectorStore vectorStore,
+            @Value("${app.rag.policy-candidate-k:40}") int candidateK,
+            @Value("${app.rag.max-candidate-k:40}") int maxCandidateK
+    ) {
         this.vectorStore = vectorStore;
+        this.candidateK = Math.max(1, candidateK);
+        this.maxCandidateK = Math.max(this.candidateK, maxCandidateK);
     }
 
     @Override
@@ -35,39 +41,43 @@ public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
             return List.of();
         }
         int k = Math.max(1, topK);
-        List<Document> documents = searchPolicyDocuments(query, k * CANDIDATE_OVERSAMPLE);
+        List<Document> documents = searchPolicyDocuments(query, candidateTopK(k));
         if (documents == null || documents.isEmpty()) {
             return List.of();
         }
         String contractTypeName = contractType.displayName();
-        return documents.stream()
+        List<PolicyRagDocument> candidates = documents.stream()
                 .filter(d -> appliesToContractType(d, contractTypeName))
-                .limit(k)
                 .map(PgVectorPolicyRagRetriever::toPolicyRagDocument)
                 .toList();
+        return RagResultReranker.rerankPolicies(candidates, query, k);
     }
 
     @Override
     public List<PolicyRagDocument> retrieve(String query, int topK) {
         int k = Math.max(1, topK);
-        List<Document> documents = searchPolicyDocuments(query, k);
+        List<Document> documents = searchPolicyDocuments(query, candidateTopK(k));
         if (documents == null || documents.isEmpty()) {
             return List.of();
         }
-        return documents.stream()
-                .limit(k)
+        List<PolicyRagDocument> candidates = documents.stream()
                 .map(PgVectorPolicyRagRetriever::toPolicyRagDocument)
                 .toList();
+        return RagResultReranker.rerankPolicies(candidates, query, k);
     }
 
     private List<Document> searchPolicyDocuments(String query, int topK) {
-        String normalizedQuery = (query == null || query.isBlank()) ? "制度依据 合规要求" : query.trim();
+        String expandedQuery = RagQueryExpander.expand(query, "制度依据 合规要求");
         SearchRequest request = SearchRequest.builder()
-                .query(normalizedQuery)
+                .query(expandedQuery)
                 .topK(Math.max(1, topK))
                 .filterExpression("docType == 'policy'")
                 .build();
         return vectorStore.similaritySearch(request);
+    }
+
+    private int candidateTopK(int finalTopK) {
+        return Math.min(maxCandidateK, Math.max(candidateK, finalTopK * 5));
     }
 
     private static boolean appliesToContractType(Document document, String contractTypeName) {
@@ -88,6 +98,9 @@ public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
         String policyDomain = readMetadataAsString(document, "policyDomain", "");
         String controlObjective = readMetadataAsString(document, "controlObjective", "");
         String severity = readMetadataAsString(document, "severity", "");
+        List<String> triggerKeywords = PolicyKnowledgeItem.splitMulti(
+                readMetadataAsString(document, "triggerKeywords", "")
+        );
         List<String> evidence = PolicyKnowledgeItem.splitMulti(
                 readMetadataAsString(document, "requiredEvidence", "")
         );
@@ -96,7 +109,7 @@ public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
         double score = document.getScore() == null ? 0.0 : document.getScore();
         return new PolicyRagDocument(
                 policyId, policyDomain, controlObjective, severity,
-                evidence, escalationRole, text, score
+                triggerKeywords, evidence, escalationRole, text, score
         );
     }
 

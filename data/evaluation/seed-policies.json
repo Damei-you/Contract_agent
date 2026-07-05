@@ -1,0 +1,202 @@
+{
+  "policies": [
+    {
+      "policyId": "POL-FIN-001",
+      "policyDomain": "财务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "HIGH",
+      "triggerKeywords": "预付;全额预付;验收前支付100%;先款后货;先款后服务",
+      "controlObjective": "付款风险",
+      "policyTextForEmbedding": "原则上应避免无担保的高比例预付或验收前支付100%。如业务确需预付，应要求乙方提供保函、履约保证金或等额担保，并在合同中设置里程碑验收与分期付款，降低资金占用与履约风险。",
+      "requiredEvidence": "付款计划表;担保文件;业务必要性说明;里程碑/验收约定",
+      "escalationRole": "财务负责人"
+    },
+    {
+      "policyId": "POL-FIN-003",
+      "policyDomain": "财务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "HIGH",
+      "triggerKeywords": "个人收款;私人账户;收款账户变更;第三方代收;挂靠",
+      "controlObjective": "收款合规与反舞弊",
+      "policyTextForEmbedding": "付款应仅向合同相对方的对公账户支付。涉及第三方代收、收款账户频繁变更或要求向个人账户付款的，视为高风险信号；需核验主体资质、开户信息与受益所有人信息，并由财务/法务审批通过后方可执行。",
+      "requiredEvidence": "收款账户证明;主体资质/营业执照;受益所有人说明;变更函",
+      "escalationRole": "财务负责人/法务"
+    },
+    {
+      "policyId": "POL-TAX-001",
+      "policyDomain": "税务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "HIGH",
+      "triggerKeywords": "含税价;不含税;发票类型;税率;征收率",
+      "controlObjective": "进项抵扣与发票合规",
+      "policyTextForEmbedding": "合同应明确不含税金额、适用税率或征收率、发票类型与开票信息。对混合销售、差额计税、跨境服务等特殊情形，应明确税务处理边界与责任分担，避免发票与交易实质不符或影响抵扣。",
+      "requiredEvidence": "税务条款截图;税率政策依据/口径说明;开票信息",
+      "escalationRole": "税务岗/财务负责人"
+    },
+    {
+      "policyId": "POL-TAX-002",
+      "policyDomain": "税务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "HIGH",
+      "triggerKeywords": "专票;进项抵扣;不得抵扣;普票",
+      "controlObjective": "抵扣资格与成本",
+      "policyTextForEmbedding": "如业务需要进项抵扣，合同应约定开具增值税专用发票的义务与时点；若对方仅能开普票或免税票据，应评估税负影响并在价格中体现，避免事后争议。",
+      "requiredEvidence": "开票资质说明;发票类型约定;税负测算",
+      "escalationRole": "税务岗/财务经理"
+    },
+    {
+      "policyId": "POL-TAX-004",
+      "policyDomain": "税务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "税率调整;政策调整;价税分离",
+      "controlObjective": "政策变动处理",
+      "policyTextForEmbedding": "应约定税率政策调整时的价税处理原则，常见为不含税价不变、税金随政策调整，并明确调整生效时间点与结算方式，减少争议与重开票成本。",
+      "requiredEvidence": "税率调整条款截图;结算/补差流程",
+      "escalationRole": "财务经理/税务岗"
+    },
+    {
+      "policyId": "POL-ACC-001",
+      "policyDomain": "会计核算",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "验收;交付;里程碑;服务确认;SOW",
+      "controlObjective": "收入/费用确认与可审计性",
+      "policyTextForEmbedding": "付款节点、验收与里程碑定义应可核验、可审计，避免出现口头确认、主观满意度等不可量化标准。必要时将SOW或验收标准作为附件并纳入合同效力范围。",
+      "requiredEvidence": "SOW/验收标准附件;里程碑清单;确认流程",
+      "escalationRole": "财务经理/业务负责人"
+    },
+    {
+      "policyId": "POL-ACC-003",
+      "policyDomain": "会计核算",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "LOW",
+      "triggerKeywords": "票据;入账;结算;对账单",
+      "controlObjective": "入账完整性",
+      "policyTextForEmbedding": "结算应提供对账单、验收单、发票等闭环凭证，确保合同、验收、发票、付款链路一致，便于审计追溯与入账。",
+      "requiredEvidence": "对账单;验收单;发票;付款审批单",
+      "escalationRole": "财务共享"
+    },
+    {
+      "policyId": "POL-PAY-001",
+      "policyDomain": "资金支付",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "HIGH",
+      "triggerKeywords": "付款条件;先付款;见票付款;见票即付;无条件付款",
+      "controlObjective": "支付条件与控制",
+      "policyTextForEmbedding": "付款条件应至少包含可验证要素，如验收合格、交付物清单、合规发票、对账确认。对无条件付款、见票即付且不要求验收的条款应要求补充控制条件或降低比例，防止资金损失。",
+      "requiredEvidence": "付款条款截图;控制点清单;验收/对账要求",
+      "escalationRole": "财务负责人"
+    },
+    {
+      "policyId": "POL-PAY-002",
+      "policyDomain": "资金支付",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "付款周期;收到发票后N天;账期",
+      "controlObjective": "资金计划与逾期风险",
+      "policyTextForEmbedding": "付款周期应与公司资金计划匹配并留有验票、对账、审批窗口。对过短账期或不合理的付款时限，应与业务协商调整或增加资料完整性前提。",
+      "requiredEvidence": "付款周期条款截图;资金计划说明",
+      "escalationRole": "财务经理"
+    },
+    {
+      "policyId": "POL-PAY-003",
+      "policyDomain": "资金支付",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "分期付款;里程碑付款;尾款",
+      "controlObjective": "降低履约风险",
+      "policyTextForEmbedding": "建议采用分期或里程碑付款并保留尾款，以形成履约约束。尾款释放应与最终验收、缺陷修复或质保条件绑定。",
+      "requiredEvidence": "里程碑/付款计划;尾款释放条件",
+      "escalationRole": "财务经理/业务负责人"
+    },
+    {
+      "policyId": "POL-PROC-001",
+      "policyDomain": "采购履约",
+      "appliesToContractType": "采购合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "验收;异议期;质保;视为验收",
+      "controlObjective": "资产与费用确认",
+      "policyTextForEmbedding": "验收标准、异议期、质保起算点应清晰可执行，避免默认验收条款在质量问题未解决时损害甲方权益。对视为验收应补充例外与证据要求。",
+      "requiredEvidence": "验收标准附件;异议流程;质保条款",
+      "escalationRole": "业务负责人"
+    },
+    {
+      "policyId": "POL-PROC-002",
+      "policyDomain": "采购履约",
+      "appliesToContractType": "采购合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "交付;迟延;物流;风险转移",
+      "controlObjective": "交付与风险控制",
+      "policyTextForEmbedding": "应明确交付地点、交付方式、风险转移时点与迟延责任，如违约金、替代采购或解除条件，避免货损争议与交付不可控。",
+      "requiredEvidence": "交付条款截图;物流/签收要求;迟延救济",
+      "escalationRole": "采购负责人"
+    },
+    {
+      "policyId": "POL-LEGAL-001",
+      "policyDomain": "法务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "HIGH",
+      "triggerKeywords": "无限责任;惩罚性赔偿;放弃抗辩",
+      "controlObjective": "责任上限与可保性",
+      "policyTextForEmbedding": "责任条款应设置合理上限并与可投保范围匹配；避免接受明显不对等的无限责任或惩罚性赔偿。对知识产权侵权等高风险点应约定补救流程与责任分担。",
+      "requiredEvidence": "责任限制条款比对;可投保性评估",
+      "escalationRole": "法务"
+    },
+    {
+      "policyId": "POL-LEGAL-002",
+      "policyDomain": "法务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "单方解除;随时解除;提前通知解除;自动续期",
+      "controlObjective": "解除与续期风险",
+      "policyTextForEmbedding": "解除条件应对等、明确且可执行。对单方随时解除、自动续期且缺少提前通知或退出机制的条款，应要求补充对等条件或退出窗口。",
+      "requiredEvidence": "解除/续期条款截图;对等性改写建议",
+      "escalationRole": "法务"
+    },
+    {
+      "policyId": "POL-LEGAL-003",
+      "policyDomain": "法务合规",
+      "appliesToContractType": "采购合同;服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "违约责任;间接损失;损失范围;可预见损失",
+      "controlObjective": "损失边界",
+      "policyTextForEmbedding": "损失赔偿范围应明确直接损失、可预见损失等边界，并排除过度扩张的间接损失，如利润损失、商誉损失等，减少不可控赔偿风险。",
+      "requiredEvidence": "违约责任条款截图;风险测算",
+      "escalationRole": "法务"
+    },
+    {
+      "policyId": "POL-SVC-001",
+      "policyDomain": "服务履约",
+      "appliesToContractType": "服务合同",
+      "severity": "HIGH",
+      "triggerKeywords": "SLA;可用性;数据;外包;分包;驻场",
+      "controlObjective": "连续性与数据安全",
+      "policyTextForEmbedding": "服务合同应明确SLA、可用性指标、违约救济、数据归属与删除、分包限制、驻场与远程访问安全要求。涉及数据处理时建议补充数据处理附录DPA与安全条款。",
+      "requiredEvidence": "SOW;SLA附件;数据处理/安全附件;分包清单",
+      "escalationRole": "信息安全/法务"
+    },
+    {
+      "policyId": "POL-SVC-002",
+      "policyDomain": "服务履约",
+      "appliesToContractType": "服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "保密;信息披露;商业秘密;日志留存",
+      "controlObjective": "保密与留痕",
+      "policyTextForEmbedding": "保密条款应覆盖保密信息范围、例外、期限与违约责任。涉及系统运维或驻场的，应约定日志留存、访问审批与最小权限，便于追溯。",
+      "requiredEvidence": "保密条款截图;访问/日志要求",
+      "escalationRole": "信息安全/法务"
+    },
+    {
+      "policyId": "POL-SVC-003",
+      "policyDomain": "服务履约",
+      "appliesToContractType": "服务合同",
+      "severity": "MEDIUM",
+      "triggerKeywords": "数据归属;数据导出;删除;备份",
+      "controlObjective": "数据资产保护",
+      "policyTextForEmbedding": "应明确数据归属、备份策略、合同终止后的数据导出与删除时限及验证方式，避免供应商锁定与数据遗失。",
+      "requiredEvidence": "数据条款截图;导出/删除方案",
+      "escalationRole": "信息安全/业务负责人"
+    }
+  ]
+}

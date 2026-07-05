@@ -10,6 +10,7 @@ import java.util.List;
  * @param policyDomain     制度领域，便于上层按角色/领域重排
  * @param controlObjective 控制目标短语，可空
  * @param severity         严重度（{@code HIGH/MEDIUM/LOW}）
+ * @param triggerKeywords  触发关键词，多个值已拆分为多元素
  * @param requiredEvidence 命中条目要求的材料/证据列表，已拆分为多元素
  * @param escalationRole   命中条目的升级或会签角色，可空字符串
  * @param text             用于向量化的制度条文（参与 Prompt 拼装）
@@ -20,6 +21,7 @@ public record PolicyRagDocument(
         String policyDomain,
         String controlObjective,
         String severity,
+        List<String> triggerKeywords,
         List<String> requiredEvidence,
         String escalationRole,
         String text,
@@ -42,6 +44,7 @@ public record PolicyRagDocument(
         if (severity == null) {
             severity = "";
         }
+        triggerKeywords = triggerKeywords == null ? List.of() : List.copyOf(triggerKeywords);
         requiredEvidence = requiredEvidence == null ? List.of() : List.copyOf(requiredEvidence);
         if (escalationRole == null) {
             escalationRole = "";

@@ -1,0 +1,82 @@
+{
+  "contracts": [
+    {
+      "contractId": "CTR-EVAL-PROC-001",
+      "records": [
+        {
+          "id": "AR-EVAL-PROC-FIN-001",
+          "stepNo": 3,
+          "approverRole": "财务经理",
+          "decision": "CONDITIONAL_APPROVED",
+          "decisionTime": "2026-03-03T10:00:00+08:00",
+          "commentSummary": "付款前置条件较完整，但需确认发票、验收证明和对公账户变更材料齐备。",
+          "linkedPolicyIds": ["POL-PAY-001", "POL-TAX-001", "POL-FIN-003"],
+          "linkedClauseChunkIds": ["pc-pay-invoice-account", "pc-price-tax"],
+          "riskItems": [
+            {
+              "code": "PAYMENT_EVIDENCE_CHECK",
+              "severity": "MEDIUM",
+              "detail": "付款前应核对发票、验收证明、交付清单和账户证明，避免见票即付或错付风险。",
+              "relatedClauseChunkIds": ["pc-pay-invoice-account"],
+              "relatedPolicyIds": ["POL-PAY-001", "POL-FIN-003"],
+              "requiredEvidence": ["付款条款截图", "验收证明", "收款账户证明"],
+              "escalationRole": "财务负责人"
+            }
+          ],
+          "vectorDocId": "doc_ar_eval_proc_fin_001"
+        },
+        {
+          "id": "AR-EVAL-PROC-LEGAL-001",
+          "stepNo": 4,
+          "approverRole": "法务",
+          "decision": "APPROVED",
+          "decisionTime": "2026-03-03T15:30:00+08:00",
+          "commentSummary": "责任上限存在保密、知识产权等例外，解除条件与迟延救济基本可执行。",
+          "linkedPolicyIds": ["POL-LEGAL-001", "POL-LEGAL-002", "POL-LEGAL-003"],
+          "linkedClauseChunkIds": ["pc-liability-cap", "pc-termination"],
+          "riskItems": [],
+          "vectorDocId": "doc_ar_eval_proc_legal_001"
+        }
+      ]
+    },
+    {
+      "contractId": "CTR-EVAL-SVC-001",
+      "records": [
+        {
+          "id": "AR-EVAL-SVC-SEC-001",
+          "stepNo": 2,
+          "approverRole": "信息安全负责人",
+          "decision": "CONDITIONAL_APPROVED",
+          "decisionTime": "2026-04-03T09:00:00+08:00",
+          "commentSummary": "SLA、日志留存、最小权限和数据删除要求已写入，但需补充DPA附件和分包人员清单。",
+          "linkedPolicyIds": ["POL-SVC-001", "POL-SVC-002", "POL-SVC-003"],
+          "linkedClauseChunkIds": ["svc-data-security", "svc-subcontract-onsite", "svc-termination-data-return"],
+          "riskItems": [
+            {
+              "code": "DPA_ATTACHMENT_REQUIRED",
+              "severity": "HIGH",
+              "detail": "涉及甲方业务数据访问，应补充数据处理附录并明确数据导出、删除和验证方式。",
+              "relatedClauseChunkIds": ["svc-data-security", "svc-termination-data-return"],
+              "relatedPolicyIds": ["POL-SVC-001", "POL-SVC-003"],
+              "requiredEvidence": ["数据处理/安全附件", "导出/删除方案", "分包清单"],
+              "escalationRole": "信息安全/法务"
+            }
+          ],
+          "vectorDocId": "doc_ar_eval_svc_sec_001"
+        },
+        {
+          "id": "AR-EVAL-SVC-FIN-001",
+          "stepNo": 4,
+          "approverRole": "财务负责人",
+          "decision": "APPROVED",
+          "decisionTime": "2026-04-04T11:20:00+08:00",
+          "commentSummary": "里程碑付款与验收、对账、合规发票绑定，尾款释放条件较清晰。",
+          "linkedPolicyIds": ["POL-PAY-003", "POL-PAY-002", "POL-TAX-001", "POL-ACC-001"],
+          "linkedClauseChunkIds": ["svc-pay-milestone", "svc-invoice-tax", "svc-acceptance"],
+          "riskItems": [],
+          "vectorDocId": "doc_ar_eval_svc_fin_001"
+        }
+      ]
+    }
+  ]
+}
