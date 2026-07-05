@@ -22,15 +22,18 @@ import java.util.List;
 public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
 
     private final VectorStore vectorStore;
+    private final RagResultReranker reranker;
     private final int candidateK;
     private final int maxCandidateK;
 
     public PgVectorPolicyRagRetriever(
             VectorStore vectorStore,
+            RagResultReranker reranker,
             @Value("${app.rag.policy-candidate-k:40}") int candidateK,
             @Value("${app.rag.max-candidate-k:40}") int maxCandidateK
     ) {
         this.vectorStore = vectorStore;
+        this.reranker = reranker;
         this.candidateK = Math.max(1, candidateK);
         this.maxCandidateK = Math.max(this.candidateK, maxCandidateK);
     }
@@ -50,7 +53,7 @@ public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
                 .filter(d -> appliesToContractType(d, contractTypeName))
                 .map(PgVectorPolicyRagRetriever::toPolicyRagDocument)
                 .toList();
-        return RagResultReranker.rerankPolicies(candidates, query, k);
+        return reranker.rerankPolicies(candidates, query, k);
     }
 
     @Override
@@ -63,7 +66,7 @@ public class PgVectorPolicyRagRetriever implements PolicyRagRetriever {
         List<PolicyRagDocument> candidates = documents.stream()
                 .map(PgVectorPolicyRagRetriever::toPolicyRagDocument)
                 .toList();
-        return RagResultReranker.rerankPolicies(candidates, query, k);
+        return reranker.rerankPolicies(candidates, query, k);
     }
 
     private List<Document> searchPolicyDocuments(String query, int topK) {

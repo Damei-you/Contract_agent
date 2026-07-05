@@ -57,6 +57,19 @@ app:
     clause-candidate-k: ${RAG_CLAUSE_CANDIDATE_K:32}
     policy-candidate-k: ${RAG_POLICY_CANDIDATE_K:40}
     max-candidate-k: ${RAG_MAX_CANDIDATE_K:40}
+    rerank:
+      # Set RAG_RERANK_ENABLED=true and ALIYUN_BAILIAN_WORKSPACE_ID to enable qwen3-rerank.
+      enabled: ${RAG_RERANK_ENABLED:false}
+      model: ${RAG_RERANK_MODEL:qwen3-rerank}
+      endpoint: ${RAG_RERANK_ENDPOINT:}
+      workspace-id: ${ALIYUN_BAILIAN_WORKSPACE_ID:${DASHSCOPE_WORKSPACE_ID:}}
+      region: ${ALIYUN_BAILIAN_REGION:cn-beijing}
+      api-key: ${RAG_RERANK_API_KEY:${DASHSCOPE_API_KEY:${OPENAI_API_KEY:${API_KEY:${api-key:}}}}}
+      max-documents: ${RAG_RERANK_MAX_DOCUMENTS:40}
+      max-document-chars: ${RAG_RERANK_MAX_DOCUMENT_CHARS:3000}
+      timeout-ms: ${RAG_RERANK_TIMEOUT_MS:5000}
+      model-weight: ${RAG_RERANK_MODEL_WEIGHT:0.70}
+      instruct: ${RAG_RERANK_INSTRUCT:Given a web search query, retrieve relevant passages that answer the query.}
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml

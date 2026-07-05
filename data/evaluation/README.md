@@ -43,7 +43,7 @@
 导入 seed 后，执行当前检索策略评测：
 
 ```powershell
-mvn -Dtest=RagRetrievalEvaluationIT -Drag.eval.strategy=current-retriever test
+mvn -Dtest=RagRetrievalEvaluationIT "-Drag.eval.strategy=current-retriever" test
 ```
 
 该命令不会调用最终问答接口，也不会让大模型生成答案；它只调用当前检索器：
@@ -66,6 +66,30 @@ mvn -Dtest=RagRetrievalEvaluationIT -Drag.eval.strategy=current-retriever test
 3. 每个问题得到一组按分数排序的 `chunkId/policyId`。
 4. 将检索结果和 qrels 对齐，计算 `Recall@K`、`Precision@K`、`MRR@K`、`nDCG@K`。
 5. 加混合检索或重排序后，用同一套 cases/qrels 再跑一次，对比两份报告即可量化提升。
+
+## 启用阿里云 qwen3-rerank
+
+系统默认只使用本地规则重排，避免未确认时产生外部模型调用费用。需要接入百炼文本排序时，先设置：
+
+```powershell
+$env:RAG_RERANK_ENABLED = "true"
+$env:ALIYUN_BAILIAN_WORKSPACE_ID = "<你的百炼业务空间ID>"
+$env:DASHSCOPE_API_KEY = "<你的百炼API Key>"
+```
+
+如需覆盖完整接口地址，也可以设置 `RAG_RERANK_ENDPOINT`，格式示例：
+
+```text
+https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks
+```
+
+开启后再跑同一套评测：
+
+```powershell
+mvn -Dtest=RagRetrievalEvaluationIT "-Drag.eval.strategy=aliyun-qwen3-rerank" "-Drag.eval.output-prefix=aliyun-qwen3-rerank" test
+```
+
+对比 `target/rag-eval/current-retriever-report.md` 和 `target/rag-eval/aliyun-qwen3-rerank-report.md`，重点看 `Recall@K`、`Precision@K`、`MRR@K`、`nDCG@K` 是否提升，同时关注报告里的 `latencyMs` 明细。
 
 ## 评测指标建议
 

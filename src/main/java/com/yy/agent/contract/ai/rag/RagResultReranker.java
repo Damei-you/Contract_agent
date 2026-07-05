@@ -1,11 +1,19 @@
 package com.yy.agent.contract.ai.rag;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * 本地重排序与多样性保留。
@@ -13,19 +21,41 @@ import java.util.Map;
  * 先基于向量分数、关键词命中、业务领域/制度元数据计算业务相关性分数，再用简化 MMR 选择结果：
  * 在保证高相关的同时，避免前几条都来自同一条款领域或同一制度领域。
  */
-final class RagResultReranker {
+@Component
+class RagResultReranker {
 
+    private static final Logger log = LoggerFactory.getLogger(RagResultReranker.class);
     private static final double MMR_LAMBDA = 0.95;
 
-    private RagResultReranker() {
+    private final RerankModelClient rerankModelClient;
+    private final double modelWeight;
+
+    @Autowired
+    RagResultReranker(
+            ObjectProvider<RerankModelClient> rerankModelClientProvider,
+            @Value("${app.rag.rerank.model-weight:0.70}") double modelWeight
+    ) {
+        this(rerankModelClientProvider.getIfAvailable(), modelWeight);
     }
 
-    static List<RagDocument> rerankClauses(List<RagDocument> candidates, String query, int topK) {
+    RagResultReranker(RerankModelClient rerankModelClient, double modelWeight) {
+        this.rerankModelClient = rerankModelClient;
+        this.modelWeight = clamp(modelWeight);
+    }
+
+    List<RagDocument> rerankClauses(List<RagDocument> candidates, String query, int topK) {
         if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
-        List<Scored<RagDocument>> scored = candidates.stream()
-                .map(doc -> new Scored<>(doc, clauseScore(doc, query), clauseGroup(doc)))
+        Map<Integer, Double> modelScores = modelScores(query, candidates.stream()
+                .map(RagResultReranker::clauseModelText)
+                .toList());
+        List<Scored<RagDocument>> scored = IntStream.range(0, candidates.size())
+                .mapToObj(index -> {
+                    RagDocument doc = candidates.get(index);
+                    double localScore = clauseScore(doc, query);
+                    return new Scored<>(doc, fusedScore(localScore, modelScores.get(index)), clauseGroup(doc));
+                })
                 .sorted(Comparator.comparingDouble(Scored<RagDocument>::score).reversed())
                 .toList();
         return selectMmr(scored, Math.max(1, topK)).stream()
@@ -33,12 +63,19 @@ final class RagResultReranker {
                 .toList();
     }
 
-    static List<PolicyRagDocument> rerankPolicies(List<PolicyRagDocument> candidates, String query, int topK) {
+    List<PolicyRagDocument> rerankPolicies(List<PolicyRagDocument> candidates, String query, int topK) {
         if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
-        List<Scored<PolicyRagDocument>> scored = candidates.stream()
-                .map(doc -> new Scored<>(doc, policyScore(doc, query), policyGroup(doc)))
+        Map<Integer, Double> modelScores = modelScores(query, candidates.stream()
+                .map(RagResultReranker::policyModelText)
+                .toList());
+        List<Scored<PolicyRagDocument>> scored = IntStream.range(0, candidates.size())
+                .mapToObj(index -> {
+                    PolicyRagDocument doc = candidates.get(index);
+                    double localScore = policyScore(doc, query);
+                    return new Scored<>(doc, fusedScore(localScore, modelScores.get(index)), policyGroup(doc));
+                })
                 .sorted(Comparator.comparingDouble(Scored<PolicyRagDocument>::score).reversed())
                 .toList();
         return selectMmr(scored, Math.max(1, topK)).stream()
@@ -57,6 +94,31 @@ final class RagResultReranker {
                     );
                 })
                 .toList();
+    }
+
+    private Map<Integer, Double> modelScores(String query, List<String> documents) {
+        if (rerankModelClient == null || !rerankModelClient.isAvailable()) {
+            return Map.of();
+        }
+        try {
+            Map<Integer, Double> scores = new HashMap<>();
+            for (RerankScore score : rerankModelClient.rerank(query, documents)) {
+                if (score.index() >= 0 && score.index() < documents.size()) {
+                    scores.put(score.index(), clamp(score.relevanceScore()));
+                }
+            }
+            return scores;
+        } catch (RuntimeException e) {
+            log.warn("Rerank model call failed, fallback to local rerank: {}", e.getMessage());
+            return Map.of();
+        }
+    }
+
+    private double fusedScore(double localScore, Double modelScore) {
+        if (modelScore == null) {
+            return localScore;
+        }
+        return modelWeight * modelScore + (1.0 - modelWeight) * localScore;
     }
 
     private static <T> List<Scored<T>> selectMmr(List<Scored<T>> candidates, int topK) {
@@ -238,6 +300,32 @@ final class RagResultReranker {
 
     private static double sameGroupPenalty(String left, String right) {
         return left.equals(right) ? 0.35 : 0.0;
+    }
+
+    private static String clauseModelText(RagDocument doc) {
+        if (doc.title().isBlank()) {
+            return doc.text();
+        }
+        return doc.title() + "\n" + doc.text();
+    }
+
+    private static String policyModelText(PolicyRagDocument doc) {
+        return String.join("\n",
+                doc.policyId(),
+                doc.policyDomain(),
+                doc.controlObjective(),
+                String.join(" ", doc.triggerKeywords()),
+                String.join(" ", doc.requiredEvidence()),
+                doc.escalationRole(),
+                doc.text()
+        );
+    }
+
+    private static double clamp(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0;
+        }
+        return Math.max(0.0, Math.min(1.0, value));
     }
 
     private record Scored<T>(T item, double score, String group) {

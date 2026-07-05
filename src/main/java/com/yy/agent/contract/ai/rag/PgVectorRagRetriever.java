@@ -21,15 +21,18 @@ import java.util.List;
 public class PgVectorRagRetriever implements RagRetriever {
 
     private final VectorStore vectorStore;
+    private final RagResultReranker reranker;
     private final int candidateK;
     private final int maxCandidateK;
 
     public PgVectorRagRetriever(
             VectorStore vectorStore,
+            RagResultReranker reranker,
             @Value("${app.rag.clause-candidate-k:32}") int candidateK,
             @Value("${app.rag.max-candidate-k:40}") int maxCandidateK
     ) {
         this.vectorStore = vectorStore;
+        this.reranker = reranker;
         this.candidateK = Math.max(1, candidateK);
         this.maxCandidateK = Math.max(this.candidateK, maxCandidateK);
     }
@@ -54,7 +57,7 @@ public class PgVectorRagRetriever implements RagRetriever {
         List<RagDocument> candidatesDocs = documents.stream()
                 .map(PgVectorRagRetriever::toRagDocument)
                 .toList();
-        return RagResultReranker.rerankClauses(candidatesDocs, query, k);
+        return reranker.rerankClauses(candidatesDocs, query, k);
     }
 
     private int candidateTopK(int finalTopK) {
