@@ -1,6 +1,6 @@
 # RAG 检索链路优化说明
 
-本文档说明合同审核场景下 RAG 检索链路的设计、重排序策略、MMR 多样性截断和离线评测方法，便于面试讲解和后续维护。
+本文档说明合同审核场景下 RAG 检索链路的设计、重排序策略、MMR 多样性截断和离线评测方法。
 
 ## 1. 为什么单纯向量检索不够
 
@@ -129,24 +129,3 @@ double mmr = MMR_LAMBDA * candidate.score()
 3. 收集每个问题的 TopK 检索结果。
 4. 对齐金标证据，计算 `Recall@K`、`Precision@K`、`MRR@K`、`nDCG@K`。
 5. 对比纯向量、向量 + rerank、向量 + rerank + MMR 的报告。
-
-常用命令：
-
-```powershell
-mvn -Dtest=RagRetrievalEvaluationIT "-Drag.eval.strategy=current-retriever" test
-```
-
-启用 qwen3-rerank 后：
-
-```powershell
-$env:RAG_RERANK_ENABLED = "true"
-$env:ALIYUN_BAILIAN_WORKSPACE_ID = "<workspace-id>"
-$env:DASHSCOPE_API_KEY = "<api-key>"
-mvn -Dtest=RagRetrievalEvaluationIT "-Drag.eval.strategy=aliyun-qwen3-rerank" "-Drag.eval.output-prefix=aliyun-qwen3-rerank" test
-```
-
-## 7. 面试回答口径
-
-可以用下面这段作为项目讲解：
-
-> 我没有直接用向量检索 TopK 作为最终上下文，而是把 RAG 拆成召回、重排、多样性截断和离线评测几个环节。召回阶段用 pgvector 在当前合同或适用制度范围内扩大候选，保证正确证据尽量进入候选集；重排阶段融合本地业务规则和 qwen3-rerank 成对相关性分数，把真正能回答问题的片段排前；最后用 MMR 轻量惩罚同组重复证据，避免 TopK 都来自同一类条款。这样能让进入大模型的上下文更准确、更少重复，也能通过 Recall、Precision、MRR 等指标量化验证。
