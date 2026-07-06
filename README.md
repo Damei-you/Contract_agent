@@ -5,8 +5,8 @@
 项目面向企业财务、法务和业务审批场景，围绕合同导入、合同问答、风险检查、审批辅助、审批记录导入和制度知识库导入构建一个可演示的端到端。核心目标不是做通用聊天机器人，而是让大模型在明确的合同事实、制度依据和审批历史范围内生成可追溯的问答、风险项和审批建议。
 
 ## 项目亮点
-
-- **场景化 RAG 检索**：合同问答默认只检索当前合同条款，用户可显式开启制度依据；风险检查和审批辅助固定使用合同条款 + 制度知识双通道，降低跨合同召回和制度误用风险。
+- **多通道证据检索**：合同问答支持合同条款和制度知识双通道检索，风险检查和审批辅助固定使用双通道，确保证据的全面性和准确性。
+- **检索重排序**：优化合同审核 RAG 检索链路，引入 Top30 量级候选召回、qwen3-rerank 精排与 MMR 多样性截断；构建离线评测集量化检索效果，使 Recall@4 提升约 12%，Precision@4 提升约 15%，MRR@4 提升至 0.98+。详见 [`docs/RAG_RETRIEVAL_OPTIMIZATION.md`](docs/RAG_RETRIEVAL_OPTIMIZATION.md)。
 - **轻量多 Agent 编排**：将审批链路拆分为合同事实 Agent、制度依据 Agent、风险审查 Agent、审批建议 Agent，并通过 `AgentTrace` 记录执行过程，便于前端展示和问题排查。
 - **结构化风险输出**：风险检查要求模型输出 JSON，包含 `summary`、`riskItems`、关联条款、制度依据、补充材料和升级角色等字段，后端使用 Jackson 解析并提供异常兜底。
 - **向量写入工程化处理**：封装 `VectorBatchWriter`，支持分批 embedding、`delete + add` 幂等覆盖和失败重试语义，解决 embedding 服务单批输入限制与重复导入冲突问题。
@@ -23,9 +23,38 @@
 | 前端 | Vue3、Vite、TypeScript、Pinia、Vue Router、Axios、Element Plus |
 | 测试 | JUnit 5、Spring Boot Test、Testcontainers |
 
+## 简化架构
+
+```text
+Vue3 页面
+  |
+  v
+Controller
+  |
+  v
+Application Service
+  |
+  +--> ContractRepository / PolicyKnowledgeRepository
+  |      |
+  |      v
+  |   PostgreSQL 业务表
+  |
+  +--> AiContractAssistant
+         |
+         +--> Contract Fact Agent
+         +--> Policy Evidence Agent
+         +--> Risk Review Agent / Approval Advice Agent
+         |
+         +--> PgVectorRagRetriever
+         +--> PgVectorPolicyRagRetriever
+                |
+                v
+             pgvector
+```
+
 ## 界面截图
 
-以下截图覆盖制度知识库导入、制度问答、合同问答、风险检查和审批辅助等核心演示链路，便于面试官快速了解项目的前端交互、RAG 证据追踪和审批场景输出效果。
+以下截图覆盖制度知识库导入、制度问答、合同问答、风险检查和审批辅助等核心演示链路.
 
 ### 制度知识库导入
 
@@ -48,6 +77,14 @@
 ![审批辅助](docs/screenshots/approval-assist.png)
 
 ## 核心能力
+
+### RAG 检索链路优化
+
+系统没有直接使用向量检索 TopK 作为最终上下文，而是采用“扩大召回 + 重排序 + MMR 截断”的两阶段检索策略。合同条款通道先按 `contractId` 限定当前合同，制度知识通道先按 `docType=policy` 和合同类型收敛候选范围；随后 `RagResultReranker` 融合 pgvector 相似度、本地业务规则和 qwen3-rerank 分数，并通过 MMR 避免 TopK 被同类条款或同一制度领域占满。
+
+- 关键代码：`PgVectorRagRetriever`、`PgVectorPolicyRagRetriever`、`RagResultReranker`
+- 评测数据：`data/evaluation/rag-eval-cases.jsonl`、`data/evaluation/rag-qrels.jsonl`
+- 详细说明：[`docs/RAG_RETRIEVAL_OPTIMIZATION.md`](docs/RAG_RETRIEVAL_OPTIMIZATION.md)
 
 ### 合同导入
 
@@ -93,34 +130,6 @@
 - API：`POST /api/policies/import`
 - 关键代码：`PolicyKnowledgeApplicationService`、`PolicyVectorIngestionService`
 
-## 简化架构
-
-```text
-Vue3 页面
-  |
-  v
-Controller
-  |
-  v
-Application Service
-  |
-  +--> ContractRepository / PolicyKnowledgeRepository
-  |      |
-  |      v
-  |   PostgreSQL 业务表
-  |
-  +--> AiContractAssistant
-         |
-         +--> Contract Fact Agent
-         +--> Policy Evidence Agent
-         +--> Risk Review Agent / Approval Advice Agent
-         |
-         +--> PgVectorRagRetriever
-         +--> PgVectorPolicyRagRetriever
-                |
-                v
-             pgvector
-```
 
 ## 数据模型
 
@@ -256,13 +265,3 @@ Windows PowerShell：
 ```powershell
 .\mvnw.cmd test
 ```
-
-当前测试覆盖了应用服务导入逻辑、政策知识导入、多 Agent 编排、向量批量写入等关键路径。部分 pgvector/JDBC 冒烟测试依赖本地 PostgreSQL 或 Testcontainers 环境。
-
-## 后续优化方向
-
-- 引入检索重排与召回效果评估集
-- 增加合同文件解析能力，支持 PDF/Word 自动切分
-- 将部分工具能力升级为 Spring AI Function Calling
-- 增加前端证据溯源展示，支持点击风险项查看关联条款和制度依据
-- 增强向量写入失败补偿和任务状态跟踪

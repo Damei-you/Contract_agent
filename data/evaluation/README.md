@@ -98,6 +98,8 @@ mvn -Dtest=RagRetrievalEvaluationIT "-Drag.eval.strategy=aliyun-qwen3-rerank" "-
 - 综合检索：按 `docId` 前缀区分 `clause:` 与 `policy:`，分别计算后再汇总。
 - 延迟：记录 `avg/p95 latencyMs`，避免重排序提升效果但不可用。
 
+检索链路的设计说明、MMR 公式和面试讲解口径见 `docs/RAG_RETRIEVAL_OPTIMIZATION.md`。
+
 建议验收线：
 
 ```text
