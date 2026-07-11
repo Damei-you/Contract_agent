@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE}
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - maintenance_work_mem=128MB
+      - -c
+      - max_connections=50
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 1g
+    cpus: 1.5
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      JAVA_TOOL_OPTIONS: >-
+        -XX:MaxRAMPercentage=65
+        -XX:InitialRAMPercentage=20
+        -XX:+UseG1GC
+        -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8088"
+    mem_limit: 1600m
+    cpus: 2.0
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ./web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8080:80"
+    mem_limit: 128m
+    cpus: 0.5
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  postgres_data:

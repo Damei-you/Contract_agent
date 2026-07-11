@@ -1,0 +1,14 @@
+.git
+.idea
+.vscode
+.codex
+.codex-tmp
+.agents
+.pnpm-store
+target
+tmp
+web
+data
+docs
+*.iml
+*.log
