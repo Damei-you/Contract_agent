@@ -1,6 +1,6 @@
 # RAG 检索链路优化说明
 
-本文档说明合同审核场景下 RAG 检索链路的设计、重排序策略、MMR 多样性截断和离线评测方法，便于面试讲解和后续维护。
+本文档说明合同审核场景下 RAG 检索链路的设计、重排序策略、MMR 多样性截断和离线评测方法。
 
 ## 1. 为什么单纯向量检索不够
 
@@ -129,18 +129,3 @@ double mmr = MMR_LAMBDA * candidate.score()
 3. 收集每个问题的 TopK 检索结果。
 4. 对齐金标证据，计算 `Recall@K`、`Precision@K`、`MRR@K`、`nDCG@K`。
 5. 对比纯向量、向量 + rerank、向量 + rerank + MMR 的报告。
-
-常用命令：
-
-```powershell
-mvn -Dtest=RagRetrievalEvaluationIT "-Drag.eval.strategy=current-retriever" test
-```
-
-启用 qwen3-rerank 后：
-
-```powershell
-$env:RAG_RERANK_ENABLED = "true"
-$env:ALIYUN_BAILIAN_WORKSPACE_ID = "<workspace-id>"
-$env:DASHSCOPE_API_KEY = "<api-key>"
-mvn -Dtest=RagRetrievalEvaluationIT "-Drag.eval.strategy=aliyun-qwen3-rerank" "-Drag.eval.output-prefix=aliyun-qwen3-rerank" test
-```
