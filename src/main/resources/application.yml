@@ -62,9 +62,9 @@ app:
       enabled: ${RAG_RERANK_ENABLED:false}
       model: ${RAG_RERANK_MODEL:qwen3-rerank}
       endpoint: ${RAG_RERANK_ENDPOINT:}
-      workspace-id: ${ALIYUN_BAILIAN_WORKSPACE_ID:${DASHSCOPE_WORKSPACE_ID:}}
+      workspace-id: ${ALIYUN_BAILIAN_WORKSPACE_ID:${DASHSCOPE_WORKSPACE_ID:llm-b3awll2c6kp7aai8}}
       region: ${ALIYUN_BAILIAN_REGION:cn-beijing}
-      api-key: ${RAG_RERANK_API_KEY:${DASHSCOPE_API_KEY:${OPENAI_API_KEY:${API_KEY:${api-key:}}}}}
+      api-key: ${RAG_RERANK_API_KEY:${DASHSCOPE_API_KEY:${api-key:}}}
       max-documents: ${RAG_RERANK_MAX_DOCUMENTS:40}
       max-document-chars: ${RAG_RERANK_MAX_DOCUMENT_CHARS:3000}
       timeout-ms: ${RAG_RERANK_TIMEOUT_MS:5000}
