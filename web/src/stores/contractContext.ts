@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { listContracts } from '../api/contracts'
+import type { ContractListItem } from '../types/contracts'
 
 export const useContractContextStore = defineStore('contractContext', () => {
   /**
@@ -18,7 +20,9 @@ export const useContractContextStore = defineStore('contractContext', () => {
    */
 
   // 当前选中/最近使用的合同 id，供“合同相关”页面共用
-  const currentContractId = ref<string>('demo-001')
+  const currentContractId = ref<string>('')
+  const contracts = ref<ContractListItem[]>([])
+  const contractsLoading = ref(false)
 
   /**
    * 更新当前合同 id（供各页面在成功请求后写入）
@@ -31,5 +35,14 @@ export const useContractContextStore = defineStore('contractContext', () => {
     currentContractId.value = id
   }
 
-  return { currentContractId, setCurrentContractId }
+  async function refreshContracts() {
+    contractsLoading.value = true
+    try {
+      contracts.value = await listContracts()
+    } finally {
+      contractsLoading.value = false
+    }
+  }
+
+  return { currentContractId, contracts, contractsLoading, setCurrentContractId, refreshContracts }
 })

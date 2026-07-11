@@ -8,6 +8,7 @@ import com.yy.agent.contract.api.dto.ContractQaRequest;
 import com.yy.agent.contract.api.dto.ContractQaResponse;
 import com.yy.agent.contract.api.dto.ContractClauseChunkResponse;
 import com.yy.agent.contract.api.dto.ContractRiskCheckResponse;
+import com.yy.agent.contract.api.dto.ContractListItemResponse;
 import com.yy.agent.contract.api.dto.ImportApprovalRecordDto;
 import com.yy.agent.contract.api.dto.ImportApprovalRecordsRequest;
 import com.yy.agent.contract.api.dto.ImportApprovalRecordsResponse;
@@ -70,6 +71,15 @@ public class ContractApplicationService {
     public ContractQaResponse qa(String contractId, ContractQaRequest request) {
         ensureContractExists(contractId);
         return aiContractAssistant.answerQuestion(contractId, request.question(), request.includePolicyEvidence());
+    }
+
+    /**
+     * 返回合同选择器所需的精简合同列表。
+     */
+    public List<ContractListItemResponse> listContracts() {
+        return contractRepository.findAll().stream()
+                .map(ContractListItemResponse::from)
+                .toList();
     }
 
     /**

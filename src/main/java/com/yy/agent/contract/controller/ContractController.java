@@ -6,6 +6,7 @@ import com.yy.agent.contract.api.dto.ContractClauseChunkResponse;
 import com.yy.agent.contract.api.dto.ContractQaRequest;
 import com.yy.agent.contract.api.dto.ContractQaResponse;
 import com.yy.agent.contract.api.dto.ContractRiskCheckResponse;
+import com.yy.agent.contract.api.dto.ContractListItemResponse;
 import com.yy.agent.contract.api.dto.ImportApprovalRecordsRequest;
 import com.yy.agent.contract.api.dto.ImportApprovalRecordsResponse;
 import com.yy.agent.contract.api.dto.ImportContractRequest;
@@ -23,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 合同 Agent 演示 API：将 HTTP 请求委托给 {@link ContractApplicationService}，自身不做业务规则。
@@ -45,6 +48,16 @@ public class ContractController {
     ) {
         this.contractApplicationService = contractApplicationService;
         this.documentParseApplicationService = documentParseApplicationService;
+    }
+
+    /**
+     * 查询可选择的全部合同。
+     *
+     * @return 按合同 id 排序的精简合同列表
+     */
+    @GetMapping
+    public List<ContractListItemResponse> listContracts() {
+        return contractApplicationService.listContracts();
     }
 
     /**

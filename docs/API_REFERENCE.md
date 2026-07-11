@@ -12,6 +12,24 @@
 
 ## 2. 导入合同
 
+### 2.0a 查询合同列表
+
+- 方法：`GET`
+- URL：`/api/contracts`
+- 用途：查询合同选择器所需的精简合同信息，结果按合同 id 排序。
+- 响应示例：
+
+```json
+[
+  {
+    "id": "CTR-RAG-001",
+    "type": "PROCUREMENT",
+    "partyAName": "甲方公司",
+    "partyBName": "乙方公司"
+  }
+]
+```
+
 - Method：`POST`
 - URL：`/api/contracts/import`
 - 用途：导入合同主数据与条款分块，触发后续检索所需数据准备。

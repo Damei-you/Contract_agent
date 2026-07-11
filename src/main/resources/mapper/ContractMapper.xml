@@ -34,6 +34,16 @@
         WHERE id = #{id}
     </select>
 
+    <select id="selectAll" resultMap="ContractResultMap">
+        SELECT id, contract_type, party_a_name, party_b_name, currency,
+               amount_ex_tax, tax_rate_pct, amount_inc_tax,
+               sign_date, effective_date, end_date,
+               performance_site, payment_terms_summary, business_owner_dept,
+               risk_tier, vector_doc_id, notes
+        FROM contracts
+        ORDER BY id
+    </select>
+
     <insert id="upsert">
         INSERT INTO contracts (
             id, contract_type, party_a_name, party_b_name, currency,

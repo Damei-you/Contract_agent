@@ -26,32 +26,7 @@ const store = useContractContextStore()
 
 const contractId = ref(store.currentContractId)
 
-const defaultPayload = {
-  records: [
-    {
-      id: 'AR-001',
-      stepNo: 2,
-      approverRole: '财务经理',
-      decision: 'APPROVED',
-      decisionTime: '2026-04-16T10:00:00+08:00',
-      commentSummary: '付款条件清晰，可通过。',
-      linkedPolicyIds: ['POL-TAX-001'],
-      linkedClauseChunkIds: ['c001', 'c002'],
-      riskItems: [
-        {
-          code: 'PAYMENT_REVIEW',
-          severity: 'LOW',
-          detail: '付款闭环已确认。',
-          relatedClauseChunkIds: ['c001'],
-          relatedPolicyIds: [],
-        },
-      ],
-      vectorDocId: 'doc_ar_001',
-    },
-  ],
-}
-
-const payloadText = ref(prettyJson(defaultPayload))
+const payloadText = ref('')
 const loading = ref(false)
 const result = ref<string>('')
 const errorMsg = ref<string>('')

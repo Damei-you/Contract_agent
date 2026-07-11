@@ -18,10 +18,30 @@
  * - 这里使用了 Element Plus 的布局组件（`el-container / el-header / el-main`）快速搭骨架
  * - 页面本身为了“先跑通真实请求”，大多仍使用原生表单控件（input/textarea/button）
  */
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useContractContextStore } from './stores/contractContext'
 
 const store = useContractContextStore()
+const route = useRoute()
+const router = useRouter()
+const contractsError = ref('')
+
+onMounted(async () => {
+  try {
+    await store.refreshContracts()
+  } catch {
+    contractsError.value = '合同列表加载失败'
+  }
+})
+
+async function selectContract(event: Event) {
+  const id = (event.target as HTMLSelectElement).value
+  store.setCurrentContractId(id)
+  if (id && typeof route.name === 'string' && route.name.startsWith('contract-')) {
+    await router.replace({ name: route.name, params: { ...route.params, id } })
+  }
+}
 
 /**
  * 顶部导航定义（展示 label + 路由目标）
@@ -37,25 +57,25 @@ const navItems = computed(() => [
   { label: '政策制度问答', to: { name: 'policies-qa' } },
   {
     label: '合同问答',
-    to: { name: 'contract-qa', params: { id: store.currentContractId } },
+    to: store.currentContractId ? { name: 'contract-qa', params: { id: store.currentContractId } } : { name: 'contracts-import' },
   },
   {
     label: '风险检查',
-    to: { name: 'contract-risk', params: { id: store.currentContractId } },
+    to: store.currentContractId ? { name: 'contract-risk', params: { id: store.currentContractId } } : { name: 'contracts-import' },
   },
   {
     label: '审批辅助',
-    to: {
+    to: store.currentContractId ? {
       name: 'contract-approval-assist',
       params: { id: store.currentContractId },
-    },
+    } : { name: 'contracts-import' },
   },
   {
     label: '审批记录导入',
-    to: {
+    to: store.currentContractId ? {
       name: 'contract-approval-records',
       params: { id: store.currentContractId },
-    },
+    } : { name: 'contracts-import' },
   },
 ])
 </script>
@@ -80,13 +100,28 @@ const navItems = computed(() => [
         </router-link>
       </nav>
       <div class="ctx">
-        <!-- 当前合同上下文展示，便于联调时确认 contractId 是否一致 -->
-        当前合同 id：<code>{{ store.currentContractId }}</code>
+        <label for="contract-selector">当前合同：</label>
+        <select id="contract-selector" class="contract-select" :value="store.currentContractId"
+          :disabled="store.contractsLoading" :title="contractsError" @change="selectContract">
+          <option value="">{{ store.contractsLoading ? '加载中…' : '请选择' }}</option>
+          <option v-for="contract in store.contracts" :key="contract.id" :value="contract.id">
+            {{ contract.id }}（{{ contract.partyAName }} / {{ contract.partyBName }}）
+          </option>
+        </select>
       </div>
     </el-header>
     <el-main class="main">
-      <router-view />
+      <router-view :key="store.currentContractId" />
     </el-main>
+    <a
+      class="github-link"
+      href="https://github.com/Damei-you/Contract_agent"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="在 GitHub 查看项目"
+    >
+      GitHub
+    </a>
   </el-container>
 </template>
 
@@ -153,6 +188,14 @@ const navItems = computed(() => [
   color: #666;
   white-space: nowrap;
 }
+.contract-select {
+  max-width: 300px;
+  padding: 4px 8px;
+  border: 1px solid #555;
+  background: #fff;
+  color: #222;
+  font-size: 12px;
+}
 .ctx-label {
   color: #555;
 }
@@ -166,5 +209,23 @@ const navItems = computed(() => [
 .main {
   background: #fff;
   padding: 0;
+}
+.github-link {
+  position: fixed;
+  right: 24px;
+  bottom: 20px;
+  z-index: 20;
+  padding: 7px 14px;
+  border: 1px solid #bbb;
+  background: rgba(255, 255, 255, 0.94);
+  color: #555;
+  font-size: 12px;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.github-link:hover {
+  border-color: #000;
+  background: #000;
+  color: #fff;
 }
 </style>

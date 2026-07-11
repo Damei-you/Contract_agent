@@ -49,6 +49,11 @@ public class MybatisContractRepository implements ContractRepository {
     }
 
     @Override
+    public List<Contract> findAll() {
+        return contractMapper.selectAll();
+    }
+
+    @Override
     public Optional<ClauseChunk> findChunk(String contractId, String chunkId) {
         return Optional.ofNullable(clauseChunkMapper.selectOne(contractId, chunkId));
     }

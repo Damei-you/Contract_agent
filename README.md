@@ -2,6 +2,8 @@
 
 基于 **Spring Boot 3 + Spring AI + PostgreSQL/pgvector + MyBatis + Vue3** 的财务合同审批 Agent 项目。
 
+线上体验：[https://contract.zhigu.site/contracts](https://contract.zhigu.site/contracts)
+
 项目面向企业财务、法务和业务审批场景，围绕合同导入、合同问答、风险检查、审批辅助、审批记录导入和制度知识库导入构建一个可演示的端到端。核心目标不是做通用聊天机器人，而是让大模型在明确的合同事实、制度依据和审批历史范围内生成可追溯的问答、风险项和审批建议。
 
 ## 项目亮点

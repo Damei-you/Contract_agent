@@ -19,38 +19,7 @@ import { importPolicyKnowledge, parsePolicyKnowledgeFile } from '../api/policies
 import { prettyJson } from '../utils/json'
 import type { NormalizedHttpError } from '../api/http'
 
-const defaultPayload = {
-  policies: [
-    {
-      policyId: 'POL-FIN-001',
-      policyDomain: '财务合规',
-      appliesToContractType: 'procurement',
-      severity: 'HIGH',
-      triggerKeywords: '预付款;预付;定金',
-      controlObjective: '控制预付款比例不超过30%',
-      policyTextForEmbedding: '采购合同预付款比例不得超过合同总金额的30%，且需提供等额保函。',
-      requiredEvidence: '预付款保函;付款审批单',
-      escalationRole: '财务总监',
-      vectorDocId: 'vec_pol_fin_001',
-      updatedAt: null,
-    },
-    {
-      policyId: 'POL-COM-001',
-      policyDomain: '合规审查',
-      appliesToContractType: 'procurement',
-      severity: 'MEDIUM',
-      triggerKeywords: '关联交易;关联方;利益冲突',
-      controlObjective: '确保关联交易合规披露',
-      policyTextForEmbedding: '与关联方签订采购合同需经合规部门审批，并在合同中明确披露关联关系。',
-      requiredEvidence: '关联交易审批表;合规审查意见',
-      escalationRole: '合规负责人',
-      vectorDocId: 'vec_pol_com_001',
-      updatedAt: null,
-    },
-  ],
-}
-
-const payloadText = ref(prettyJson(defaultPayload))
+const payloadText = ref('')
 const selectedFile = ref<File | null>(null)
 const loading = ref(false)
 const parseLoading = ref(false)

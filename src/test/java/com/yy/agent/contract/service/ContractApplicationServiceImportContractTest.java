@@ -92,6 +92,21 @@ class ContractApplicationServiceImportContractTest {
         assertThat(response.textForEmbedding()).contains("验收合格后30个自然日");
     }
 
+    @Test
+    void shouldListContractsForSelector() {
+        InMemoryContractRepository repository = new InMemoryContractRepository(
+                demoContract("CTR-LIST-001", "甲方公司")
+        );
+
+        assertThat(service(repository).listContracts())
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.id()).isEqualTo("CTR-LIST-001");
+                    assertThat(item.partyAName()).isEqualTo("甲方公司");
+                    assertThat(item.type()).isEqualTo("PROCUREMENT");
+                });
+    }
+
     private static ContractApplicationService service(InMemoryContractRepository repository) {
         return new ContractApplicationService(
                 repository,
@@ -172,6 +187,11 @@ class ContractApplicationServiceImportContractTest {
                 return Optional.of(contract);
             }
             return Optional.empty();
+        }
+
+        @Override
+        public List<Contract> findAll() {
+            return contract == null ? List.of() : List.of(contract);
         }
 
         @Override

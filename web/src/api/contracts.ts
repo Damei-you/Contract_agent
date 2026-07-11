@@ -8,10 +8,17 @@ import type {
   ContractFileParseResponse,
   ContractImportRequest,
   ContractImportResponse,
+  ContractListItem,
   ContractQaRequest,
   ContractQaResponse,
   ContractRiskCheckResponse,
 } from '../types/contracts'
+
+/** 查询合同选择器数据（GET /api/contracts） */
+export async function listContracts(): Promise<ContractListItem[]> {
+  const { data } = await http.get<ContractListItem[]>('/contracts')
+  return data
+}
 
 /**
  * 合同相关 API（业务接口层）

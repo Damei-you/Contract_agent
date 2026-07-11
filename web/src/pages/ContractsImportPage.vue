@@ -28,43 +28,7 @@ import type { ContractImportRequest } from '../types/contracts'
 
 const store = useContractContextStore()
 
-const defaultPayload = {
-  id: 'CTR-RAG-001',
-  type: 'procurement',
-  partyAName: '甲方公司',
-  partyBName: '乙方公司',
-  currency: 'CNY',
-  amountExTax: 500000,
-  taxRatePct: 13,
-  amountIncTax: 565000,
-  signDate: '2026-04-16',
-  effectiveDate: '2026-04-16',
-  endDate: '2027-04-15',
-  performanceSite: '上海',
-  paymentTermsSummary: '验收后30日付款',
-  businessOwnerDept: '采购部',
-  riskTier: 'MEDIUM',
-  vectorDocId: 'doc_ctr_001',
-  notes: '首版导入',
-  chunks: [
-    {
-      id: 'c001',
-      clauseCode: 'PAY',
-      clauseTitle: '付款条件',
-      clauseCategory: '财务',
-      textForEmbedding: '甲方在收到发票及验收证明后30个自然日内付款。',
-    },
-    {
-      id: 'c002',
-      clauseCode: 'LIA',
-      clauseTitle: '违约责任',
-      clauseCategory: '法务',
-      textForEmbedding: '逾期履约按日万分之五承担违约金。',
-    },
-  ],
-}
-
-const payloadText = ref(prettyJson(defaultPayload))
+const payloadText = ref('')
 const selectedFile = ref<File | null>(null)
 const loading = ref(false)
 const parseLoading = ref(false)
@@ -152,6 +116,11 @@ async function submit() {
     result.value = prettyJson(resp)
     // 4) 把 contractId 写入全局上下文，供其他页面默认使用
     store.setCurrentContractId(resp.contractId)
+    try {
+      await store.refreshContracts()
+    } catch {
+      // 合同已导入成功；列表可在下次加载页面时重试，不能把成功导入误报为失败。
+    }
   } catch (e) {
     const err = e as NormalizedHttpError
     // 失败：err.message 来自 utils/errors.ts 的状态码映射；err.data 是后端错误体（若存在）

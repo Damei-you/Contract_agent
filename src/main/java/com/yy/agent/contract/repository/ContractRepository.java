@@ -15,6 +15,13 @@ import java.util.Optional;
 public interface ContractRepository {
 
     /**
+     * @return 全部合同，按合同 id 排序
+     */
+    default List<Contract> findAll() {
+        return List.of();
+    }
+
+    /**
      * @param id 合同主键
      * @return 合同 Optional
      */

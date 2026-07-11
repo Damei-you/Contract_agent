@@ -84,6 +84,13 @@ export interface ContractImportResponse {
   message: string
 }
 
+export interface ContractListItem {
+  id: string
+  type: string
+  partyAName: string
+  partyBName: string
+}
+
 export interface ParsedFileMetadata {
   filename: string
   contentType: string
